@@ -1,0 +1,459 @@
+---
+// src/pages/about.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+---
+
+<PublicLayout
+  title="About — Hidden Gems Boise"
+  description="Hidden Gems Boise is a curated directory of independently owned businesses across the Treasure Valley, built by Richard Prins Jr. of Velocity Web Studio."
+>
+  <!-- HERO -->
+  <div class="about-hero">
+    <div class="about-hero-bg"></div>
+    <div class="about-hero-overlay"></div>
+    <div class="about-hero-content section-container">
+      <p class="section-eyebrow" style="color: var(--color-gem-gold-light)">
+        Our Story
+      </p>
+      <h1 class="about-hero-title">About <em>Hidden Gems</em></h1>
+      <p class="about-hero-sub">
+        A curated directory built for the Treasure Valley's best independently
+        owned businesses.
+      </p>
+    </div>
+  </div>
+
+  <!-- MISSION -->
+  <section class="about-section">
+    <div class="section-container">
+      <div class="about-mission">
+        <div class="about-mission-text">
+          <span class="section-eyebrow">Why We Built This</span>
+          <h2 class="about-section-title">
+            Boise deserves better than <em>generic search results.</em>
+          </h2>
+          <p>
+            When you search for a coffee shop, a plumber, or a place to grab
+            dinner in Boise, you get a wall of national chains and paid ads. The
+            independently owned businesses that make this city worth living in —
+            the ones with real stories, real owners, and real character — are
+            buried.
+          </p>
+          <p>
+            Hidden Gems Boise exists to fix that. We curate, verify, and
+            spotlight the best independently owned businesses across the
+            Treasure Valley — so locals can find them, support them, and keep
+            coming back.
+          </p>
+          <p>
+            Every listing is reviewed by a real person. We don't list national
+            chains, franchises, or businesses that don't belong here. Quality
+            over quantity, always.
+          </p>
+        </div>
+        <div class="about-mission-img">
+          <img
+            src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=80"
+            alt="Local Boise business"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="about-values-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">What We Stand For</span>
+        <h2 class="section-title">Built on a few <em>simple beliefs.</em></h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card">
+          <div class="value-icon">🏙️</div>
+          <h3 class="value-title">Local First</h3>
+          <p class="value-text">
+            Every business in our directory is independently owned. No chains,
+            no franchises, no exceptions. Locally owned businesses are the
+            backbone of what makes the Treasure Valley worth living in.
+          </p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">✅</div>
+          <h3 class="value-title">Curated, Not Crowdsourced</h3>
+          <p class="value-text">
+            We personally review every listing before it goes live. That means
+            every business you find here has been vetted — not just scraped from
+            a database or auto-approved by an algorithm.
+          </p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">💎</div>
+          <h3 class="value-title">Quality Over Volume</h3>
+          <p class="value-text">
+            We'd rather have 200 great listings than 2,000 mediocre ones. The
+            Gem of the Week spotlight exists to celebrate businesses that
+            deserve more attention than they get.
+          </p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">🤝</div>
+          <h3 class="value-title">Relationship Driven</h3>
+          <p class="value-text">
+            We're not just a listings site. We're a community resource. We show
+            up for business owners — through spotlights, referrals, and
+            connections that help them grow.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOUNDER -->
+  <section class="about-founder-section">
+    <div class="section-container">
+      <div class="founder-card">
+        <div class="founder-img-wrap">
+          <div class="founder-img-placeholder">R</div>
+        </div>
+        <div class="founder-body">
+          <span class="section-eyebrow">The Person Behind It</span>
+          <h2 class="founder-title">Hey, I'm <em>Richard.</em></h2>
+          <p>
+            I'm a software developer and the founder of <a
+              href="https://velocitywebstudio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="founder-link">Velocity Web Studio</a
+            > — a web design and digital marketing agency focused on helping local
+            businesses grow their online presence.
+          </p>
+          <p>
+            I built Hidden Gems Boise because I kept running into the same
+            problem: great local businesses that nobody knew about, struggling
+            to get found online while national chains dominated every search
+            result. That felt wrong.
+          </p>
+          <p>
+            The directory started as a way to spotlight businesses I genuinely
+            love — but it quickly became something more. Every business we
+            feature is a relationship. And through those relationships, I get to
+            do what I love: help local business owners build the kind of digital
+            presence that actually gets them found, gets the phone ringing, and
+            keeps customers coming back.
+          </p>
+          <p>
+            If you own a local business in the Treasure Valley and want to be
+            part of this — or if you need a website, automations, or help with
+            your digital marketing — I'd love to connect.
+          </p>
+          <div class="founder-actions">
+            <a href="/submit" class="btn-gold">List Your Business →</a>
+            <a
+              href="https://velocitywebstudio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-outline-dark"
+            >
+              Velocity Web Studio →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="about-cta-section">
+    <div class="section-container">
+      <div class="about-cta-inner">
+        <div>
+          <h2 class="about-cta-title">Ready to get <em>discovered?</em></h2>
+          <p class="about-cta-sub">
+            Submit your business and join the directory. We review every
+            submission and get back to you within 1–2 business days.
+          </p>
+        </div>
+        <div class="about-cta-actions">
+          <a href="/submit" class="btn-gold">List Your Business →</a>
+          <a href="/explore" class="btn-outline-white">Explore the Directory</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  /* HERO */
+  .about-hero {
+    position: relative;
+    height: 280px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    padding-top: 4rem;
+  }
+  .about-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("https://images.unsplash.com/photo-1569701813229-33284b643e3c?w=1600&auto=format&fit=crop&q=80");
+    background-size: cover;
+    background-position: center 40%;
+  }
+  .about-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 13, 13, 0.3) 0%,
+      rgba(13, 13, 13, 0.8) 100%
+    );
+  }
+  .about-hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: 2.5rem;
+    width: 100%;
+  }
+  .about-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .about-hero-title em {
+    font-style: italic;
+    color: var(--color-gem-gold-light);
+  }
+  .about-hero-sub {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9375rem;
+  }
+
+  /* MISSION */
+  .about-section {
+    background: white;
+    padding: 5rem 2rem;
+  }
+
+  .about-mission {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .about-mission {
+      grid-template-columns: 1fr;
+    }
+    .about-mission-img {
+      order: -1;
+    }
+  }
+
+  .about-section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+  }
+  .about-section-title em {
+    font-style: italic;
+    color: var(--color-gem-gold);
+  }
+
+  .about-mission-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .about-mission-text p {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .about-mission-img {
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+  }
+  .about-mission-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* VALUES */
+  .about-values-section {
+    background: var(--color-gem-mist);
+    padding: 5rem 2rem;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .values-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .value-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.75rem;
+  }
+  .value-icon {
+    font-size: 2rem;
+    margin-bottom: 0.875rem;
+  }
+  .value-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .value-text {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.7;
+  }
+
+  /* FOUNDER */
+  .about-founder-section {
+    background: white;
+    padding: 5rem 2rem;
+  }
+
+  .founder-card {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 3rem;
+    align-items: start;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .founder-card {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .founder-img-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .founder-img-placeholder {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 4rem;
+    font-weight: 600;
+  }
+
+  .founder-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+  .founder-title em {
+    font-style: italic;
+    color: var(--color-gem-gold);
+  }
+
+  .founder-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .founder-body p {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .founder-link {
+    color: var(--color-gem-gold);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .founder-link:hover {
+    text-decoration: underline;
+  }
+
+  .founder-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  /* CTA */
+  .about-cta-section {
+    background: var(--color-gem-dark);
+    padding: 5rem 2rem;
+  }
+
+  .about-cta-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .about-cta-inner {
+      grid-template-columns: 1fr;
+    }
+    .about-cta-actions {
+      flex-direction: column;
+    }
+  }
+
+  .about-cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+  }
+  .about-cta-title em {
+    font-style: italic;
+    color: var(--color-gem-gold);
+  }
+  .about-cta-sub {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.9375rem;
+    max-width: 480px;
+    line-height: 1.65;
+  }
+  .about-cta-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+</style>

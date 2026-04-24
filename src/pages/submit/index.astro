@@ -1,0 +1,1141 @@
+---
+// src/pages/submit.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { GET as getFormData } from "@/pages/api/submissions/form-data";
+
+const response = await getFormData({ request: Astro.request } as any);
+const { categories } = await response.json();
+
+const tiers = [
+  {
+    id: "BASIC",
+    name: "Basic",
+    monthly: 9,
+    annual: 90,
+    description: "Get your business listed and discoverable.",
+    features: [
+      "Live listing on Hidden Gems Boise",
+      "Basic business info",
+      "One primary photo",
+      "Contact details",
+    ],
+  },
+  {
+    id: "PRO",
+    name: "Pro",
+    monthly: 49,
+    annual: 490,
+    description: "The full listing experience. Most popular.",
+    features: [
+      "Everything in Basic +",
+      "Full photo gallery",
+      "Website & social links",
+      "Events listings",
+      "Review responses",
+      "Extended bio",
+    ],
+    popular: true,
+  },
+  {
+    id: "ELITE",
+    name: "Elite",
+    monthly: 99,
+    annual: 990,
+    description: "Maximum visibility and a monthly social spotlight.",
+    features: [
+      "Everything in Pro +",
+      "Featured placement in search",
+      "Homepage carousel inclusion",
+      "Monthly social spotlight post",
+      "Analytics dashboard",
+      "Priority support",
+    ],
+  },
+];
+
+const pricePoints = [
+  { value: "ONE", label: "$" },
+  { value: "TWO", label: "$$" },
+  { value: "THREE", label: "$$$" },
+  { value: "FOUR", label: "$$$$" },
+];
+---
+
+<PublicLayout
+  title="List Your Business — Hidden Gems Boise"
+  description="Get your independently owned Boise business listed on Hidden Gems. Reach locals actively looking for places like yours."
+>
+  <!-- HERO -->
+  <div class="submit-hero">
+    <div class="submit-hero-bg"></div>
+    <div class="submit-hero-overlay"></div>
+    <div class="submit-hero-content section-container">
+      <p class="section-eyebrow" style="color: var(--color-gem-gold-light)">
+        Join the Directory
+      </p>
+      <h1 class="submit-hero-title">List Your <em>Business</em></h1>
+      <p class="submit-hero-sub">
+        Get in front of locals actively searching for independent businesses
+        like yours. We review every submission to keep the directory curated and
+        trustworthy.
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="submit-layout section-container">
+    <!-- FORM SECTION -->
+    <div class="submit-form-wrap">
+      <!-- Tier Selection -->
+      <div class="form-card">
+        <h2 class="form-card-title">Choose Your Plan</h2>
+        <p class="form-card-sub">
+          You won't be charged until your listing is approved.
+        </p>
+
+        <div class="billing-toggle-wrap">
+          <span class="billing-label" id="label-monthly">Monthly</span>
+          <button
+            class="billing-toggle"
+            id="billing-toggle"
+            aria-pressed="false"
+            type="button"
+          >
+            <span class="billing-toggle-thumb"></span>
+          </button>
+          <span class="billing-label" id="label-annual">
+            Annual <span class="billing-save-badge">Save ~17%</span>
+          </span>
+        </div>
+
+        <div class="tier-grid">
+          {
+            tiers.map((tier) => (
+              <label
+                class:list={["tier-card", tier.popular && "tier-card-popular"]}
+              >
+                <input
+                  type="radio"
+                  name="tier"
+                  value={tier.id}
+                  class="sr-only tier-radio"
+                  required
+                  checked={tier.popular}
+                />
+                {tier.popular && (
+                  <span class="tier-popular-badge">Most Popular</span>
+                )}
+                <div class="tier-name">{tier.name}</div>
+                <div class="tier-price">
+                  <span class="tier-price-monthly">
+                    <strong>${tier.monthly}</strong>/mo
+                  </span>
+                  <span class="tier-price-annual" style="display:none">
+                    <strong>${tier.annual}</strong>/yr
+                  </span>
+                </div>
+                <p class="tier-desc">{tier.description}</p>
+                <ul class="tier-features">
+                  {tier.features.map((f) => (
+                    <li>✓ {f}</li>
+                  ))}
+                </ul>
+              </label>
+            ))
+          }
+        </div>
+        <input
+          type="hidden"
+          id="billing-cycle-input"
+          name="billingCycle"
+          value="monthly"
+        />
+      </div>
+
+      <!-- Business Info -->
+      <div class="form-card">
+        <h2 class="form-card-title">Business Information</h2>
+
+        <div class="form-grid">
+          <div class="form-field form-field-full">
+            <label class="gem-label" for="businessName"
+              >Business Name <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="businessName"
+              name="businessName"
+              type="text"
+              placeholder="Your Business Name Here"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="categoryId"
+              >Category <span class="required">*</span></label
+            >
+            <select
+              class="gem-input"
+              id="categoryId"
+              name="categoryId"
+              required
+            >
+              <option value="">Select a category…</option>
+              {
+                categories.map((cat: any) => (
+                  <option value={cat.id}>{cat.name}</option>
+                ))
+              }
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="subcategoryId"
+              >Type <span class="form-optional">(optional)</span></label
+            >
+            <select class="gem-input" id="subcategoryId" name="subcategoryId">
+              <option value="">Select category first…</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="pricePoint"
+              >Price Range <span class="form-optional">(optional)</span></label
+            >
+            <select class="gem-input" id="pricePoint" name="pricePoint">
+              <option value="">Select…</option>
+              {
+                pricePoints.map((p) => (
+                  <option value={p.value}>{p.label}</option>
+                ))
+              }
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="website"
+              >Website URL <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="website"
+              name="website"
+              type="url"
+              placeholder="https://yourbusiness.com"
+            />
+          </div>
+
+          <div class="form-field form-field-full">
+            <label class="gem-label" for="bio"
+              >Business Description <span class="form-optional">(optional)</span
+              ></label
+            >
+            <textarea
+              class="gem-textarea"
+              id="bio"
+              name="bio"
+              placeholder="Tell us what makes your business a hidden gem…"
+              rows="4"></textarea>
+            <span class="form-hint"
+              >Keep it under 500 characters. This appears on your listing.</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact & Location -->
+      <div class="form-card">
+        <h2 class="form-card-title">Contact & Location</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="gem-label" for="phone"
+              >Phone Number <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="phone"
+              name="phone"
+              type="tel"
+              placeholder="(208) 555-0100"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="email"
+              >Business Email <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="email"
+              name="email"
+              type="email"
+              placeholder="hello@yourbusiness.com"
+              required
+            />
+          </div>
+
+          <div class="form-field form-field-full">
+            <label class="gem-label" for="address"
+              >Street Address <span class="form-optional">(optional)</span
+              ></label
+            >
+            <input
+              class="gem-input"
+              id="address"
+              name="address"
+              type="text"
+              placeholder="123 Main St"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="city"
+              >City <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="city"
+              name="city"
+              type="text"
+              placeholder="Boise"
+              value="Boise"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="neighborhood"
+              >Neighborhood <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="neighborhood"
+              name="neighborhood"
+              type="text"
+              placeholder="Downtown, North End, Hyde Park…"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="zip"
+              >ZIP Code <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="zip"
+              name="zip"
+              type="text"
+              placeholder="83702"
+              maxlength="10"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="state">State</label>
+            <input
+              class="gem-input"
+              id="state"
+              name="state"
+              type="text"
+              value="ID"
+              readonly
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Owner Info -->
+      <div class="form-card">
+        <h2 class="form-card-title">About You</h2>
+        <p class="form-card-sub">
+          This information is kept private and used only to contact you about
+          your listing.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="gem-label" for="ownerName"
+              >Your Name <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="ownerName"
+              name="ownerName"
+              type="text"
+              placeholder="Jane Smith"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="gem-label" for="ownerEmail"
+              >Your Email <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="ownerEmail"
+              name="ownerEmail"
+              type="email"
+              placeholder="jane@yourbusiness.com"
+              required
+            />
+          </div>
+
+          <div class="form-field form-field-full">
+            <label class="gem-label" for="notes"
+              >Anything else we should know? <span class="form-optional"
+                >(optional)</span
+              ></label
+            >
+            <textarea
+              class="gem-textarea"
+              id="notes"
+              name="notes"
+              placeholder="Hours, special requests, questions…"
+              rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div class="submit-error hidden" id="submit-error">
+        <p id="submit-error-text"></p>
+        <a id="submit-error-claim" href="/submit" class="hidden"
+          >Claim your listing instead →</a
+        >
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-footer">
+        <p class="submit-disclaimer">
+          By submitting you agree to our terms. You won't be charged until your
+          listing is reviewed and approved — usually within 1–2 business days.
+        </p>
+        <button
+          type="submit"
+          class="btn-gold submit-btn"
+          id="submit-btn"
+          form="submit-form"
+        >
+          Submit Your Listing →
+        </button>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="submit-sidebar">
+      <div class="submit-sidebar-card">
+        <div class="submit-sidebar-icon">💎</div>
+        <h3 class="submit-sidebar-title">Why Hidden Gems?</h3>
+        <ul class="submit-sidebar-list">
+          <li>Curated directory — only independently owned businesses</li>
+          <li>SEO-optimized listings that rank for local searches</li>
+          <li>Featured in our social spotlights and newsletter</li>
+          <li>Reach locals who actively seek out independent businesses</li>
+          <li>No approval, no charge — we review every listing first</li>
+        </ul>
+      </div>
+
+      <div class="submit-sidebar-card">
+        <h3 class="submit-sidebar-title">Already listed?</h3>
+        <p class="submit-sidebar-text">
+          If your business is already in our directory, you can claim your
+          listing and take control of your profile.
+        </p>
+        <a href="/claim" class="submit-claim-link">Claim your listing →</a>
+      </div>
+
+      <div class="submit-sidebar-card submit-sidebar-faq">
+        <h3 class="submit-sidebar-title">Common Questions</h3>
+        <div class="submit-faq-list">
+          <div class="submit-faq-item">
+            <p class="submit-faq-q">When will I be charged?</p>
+            <p class="submit-faq-a">
+              Only after your listing is approved. We'll send you a secure
+              payment link.
+            </p>
+          </div>
+          <div class="submit-faq-item">
+            <p class="submit-faq-q">How long does approval take?</p>
+            <p class="submit-faq-a">
+              Usually 1–2 business days. We personally review every submission.
+            </p>
+          </div>
+          <div class="submit-faq-item">
+            <p class="submit-faq-q">Can I upgrade later?</p>
+            <p class="submit-faq-a">
+              Yes — you can change your plan any time from your business portal.
+            </p>
+          </div>
+          <div class="submit-faq-item">
+            <p class="submit-faq-q">What counts as independently owned?</p>
+            <p class="submit-faq-a">
+              Locally owned businesses — no national chains or franchises.
+            </p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Hidden form for submission -->
+  <form id="submit-form" style="display:none"></form>
+</PublicLayout>
+
+<style>
+  /* HERO */
+  .submit-hero {
+    position: relative;
+    height: 280px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    padding-top: 4rem;
+  }
+  .submit-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&auto=format&fit=crop&q=80");
+    background-size: cover;
+    background-position: center 50%;
+  }
+  .submit-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 13, 13, 0.3) 0%,
+      rgba(13, 13, 13, 0.8) 100%
+    );
+  }
+  .submit-hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: 2.5rem;
+    width: 100%;
+  }
+  .submit-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .submit-hero-title em {
+    font-style: italic;
+    color: var(--color-gem-gold-light);
+  }
+  .submit-hero-sub {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9375rem;
+    max-width: 560px;
+  }
+
+  /* LAYOUT */
+  .submit-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2.5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .submit-layout {
+      grid-template-columns: 1fr;
+    }
+    .submit-sidebar {
+      order: -1;
+    }
+  }
+
+  /* FORM CARDS */
+  .submit-form-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.75rem;
+  }
+
+  .form-card-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 0.375rem;
+  }
+
+  .form-card-sub {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .form-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .required {
+    color: var(--color-gem-gold);
+  }
+  .form-optional {
+    font-size: 0.75rem;
+    color: var(--color-gem-text-subtle);
+    font-weight: 400;
+  }
+  .form-hint {
+    font-size: 0.75rem;
+    color: var(--color-gem-text-subtle);
+    margin-top: 0.25rem;
+  }
+
+  /* BILLING TOGGLE */
+  .billing-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .billing-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gem-text-muted);
+  }
+
+  .billing-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--color-gem-border);
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .billing-toggle.active {
+    background: var(--color-gem-gold);
+  }
+
+  .billing-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    display: block;
+  }
+
+  .billing-toggle.active .billing-toggle-thumb {
+    transform: translateX(20px);
+  }
+
+  .billing-save-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.5rem;
+    background: rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(201, 168, 76, 0.25);
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    margin-left: 0.375rem;
+  }
+
+  /* TIER CARDS */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .tier-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tier-card {
+    position: relative;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tier-card:hover {
+    border-color: var(--color-gem-gold);
+  }
+
+  .tier-card:has(.tier-radio:checked) {
+    border-color: var(--color-gem-gold);
+    background: rgba(201, 168, 76, 0.04);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+  }
+
+  .tier-card-popular {
+    border-color: var(--color-gem-gold);
+  }
+
+  .tier-popular-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.75rem;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .tier-name {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+  }
+
+  .tier-price {
+    line-height: 1.2;
+  }
+  .tier-price strong {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+  }
+  .tier-price span {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+  }
+
+  .tier-desc {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+
+  .tier-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .tier-features li {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+  }
+  .tier-features li::first-letter {
+    color: var(--color-gem-gold);
+    font-weight: 700;
+  }
+
+  /* FORM INPUTS */
+  .gem-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-gem-text);
+  }
+  .gem-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+    background: var(--color-gem-mist);
+    outline: none;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+  .gem-input:focus {
+    border-color: var(--color-gem-gold);
+    background: white;
+  }
+  .gem-input[readonly] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .gem-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+    background: var(--color-gem-mist);
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  .gem-textarea:focus {
+    border-color: var(--color-gem-gold);
+    background: white;
+  }
+
+  /* ERROR */
+  .submit-error {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .submit-error.hidden {
+    display: none;
+  }
+
+  .submit-error a {
+    color: #b91c1c;
+    font-weight: 600;
+  }
+
+  /* FOOTER */
+  .submit-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1.25rem 1.75rem;
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+  }
+
+  .submit-disclaimer {
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-subtle);
+    max-width: 420px;
+    line-height: 1.6;
+  }
+
+  .submit-btn {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* SIDEBAR */
+  .submit-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: sticky;
+    top: 100px;
+  }
+
+  .submit-sidebar-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.5rem;
+  }
+
+  .submit-sidebar-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .submit-sidebar-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .submit-sidebar-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .submit-sidebar-list li {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    padding-left: 1.25rem;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .submit-sidebar-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--color-gem-gold);
+    font-weight: 700;
+  }
+
+  .submit-sidebar-text {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+
+  .submit-claim-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    text-decoration: none;
+  }
+  .submit-claim-link:hover {
+    text-decoration: underline;
+  }
+
+  .submit-faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .submit-faq-q {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 0.25rem;
+  }
+  .submit-faq-a {
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.6;
+  }
+</style>
+
+<script>
+  // Category → subcategory dependency
+  const categorySelect = document.getElementById(
+    "categoryId"
+  ) as HTMLSelectElement;
+  const subcategorySelect = document.getElementById(
+    "subcategoryId"
+  ) as HTMLSelectElement;
+
+  const subcategoryMap: Record<string, { id: string; name: string }[]> = {
+    // populated from server data via inline script below
+  };
+
+  // Inject subcategory data from server
+  const categories = JSON.parse(
+    document.getElementById("categories-data")?.textContent ?? "[]"
+  );
+  categories.forEach((cat: any) => {
+    subcategoryMap[cat.id] = cat.subcategories ?? [];
+  });
+
+  categorySelect?.addEventListener("change", () => {
+    const catId = categorySelect.value;
+    const subs = subcategoryMap[catId] ?? [];
+    subcategorySelect.innerHTML = "";
+
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent =
+      subs.length > 0 ? "Select a type…" : "No subtypes available";
+    subcategorySelect.appendChild(defaultOpt);
+
+    subs.forEach((sub) => {
+      const opt = document.createElement("option");
+      opt.value = sub.id;
+      opt.textContent = sub.name;
+      subcategorySelect.appendChild(opt);
+    });
+  });
+
+  // Billing toggle
+  const toggle = document.getElementById("billing-toggle") as HTMLButtonElement;
+  const billingInput = document.getElementById(
+    "billing-cycle-input"
+  ) as HTMLInputElement;
+  const monthlyPrices = document.querySelectorAll(".tier-price-monthly");
+  const annualPrices = document.querySelectorAll(".tier-price-annual");
+
+  toggle?.addEventListener("click", () => {
+    const isAnnual = toggle.classList.toggle("active");
+    toggle.setAttribute("aria-pressed", String(isAnnual));
+    billingInput.value = isAnnual ? "annual" : "monthly";
+
+    monthlyPrices.forEach(
+      (el) => ((el as HTMLElement).style.display = isAnnual ? "none" : "")
+    );
+    annualPrices.forEach(
+      (el) => ((el as HTMLElement).style.display = isAnnual ? "" : "none")
+    );
+  });
+
+  // Form submission
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const errorWrap = document.getElementById("submit-error") as HTMLDivElement;
+  const errorText = document.getElementById(
+    "submit-error-text"
+  ) as HTMLParagraphElement;
+  const errorClaim = document.getElementById(
+    "submit-error-claim"
+  ) as HTMLAnchorElement;
+
+  submitBtn?.addEventListener("click", async (e) => {
+    e?.preventDefault();
+    // Gather all form values
+    const getValue = (id: string) =>
+      (document.getElementById(id) as HTMLInputElement)?.value?.trim() ?? "";
+    const getCheckedRadio = (name: string) =>
+      (
+        document.querySelector(
+          `input[name="${name}"]:checked`
+        ) as HTMLInputElement
+      )?.value ?? "";
+
+    const payload = {
+      businessName: getValue("businessName"),
+      categoryId: getValue("categoryId"),
+      subcategoryId: getValue("subcategoryId"),
+      website: getValue("website"),
+      phone: getValue("phone"),
+      email: getValue("email"),
+      address: getValue("address"),
+      city: getValue("city"),
+      state: getValue("state"),
+      zip: getValue("zip"),
+      neighborhood: getValue("neighborhood"),
+      bio: getValue("bio"),
+      pricePoint: getValue("pricePoint"),
+      tier: getCheckedRadio("tier"),
+      billingCycle: getValue("billing-cycle-input"),
+      ownerName: getValue("ownerName"),
+      ownerEmail: getValue("ownerEmail"),
+      notes: getValue("notes"),
+    };
+
+    // Basic client-side required check
+    if (
+      !payload.businessName ||
+      !payload.categoryId ||
+      !payload.email ||
+      !payload.ownerName ||
+      !payload.ownerEmail ||
+      !payload.tier
+    ) {
+      errorWrap.classList.remove("hidden");
+      errorText.textContent =
+        "Please fill in all required fields and select a plan.";
+      errorClaim.classList.add("hidden");
+      errorWrap.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      //hide error after 5 seconds
+      setTimeout(() => {
+        errorWrap.classList.add("hidden");
+      }, 5000);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting…";
+    errorWrap.classList.add("hidden");
+
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        window.location.href = "/submit/thank-you";
+        return;
+      }
+
+      // Handle duplicate errors
+      errorWrap.classList.remove("hidden");
+      errorText.textContent =
+        data.message ?? "Something went wrong. Please try again.";
+
+      if (data.error === "duplicate_business" && data.slug) {
+        errorClaim.href = `/listings/${data.slug}`;
+        errorClaim.textContent = "View the existing listing →";
+        errorClaim.classList.remove("hidden");
+      } else {
+        errorClaim.classList.add("hidden");
+      }
+
+      errorWrap.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch {
+      errorWrap.classList.remove("hidden");
+      errorText.textContent = "Something went wrong. Please try again.";
+      errorClaim.classList.add("hidden");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Your Listing →";
+    }
+  });
+</script>
+
+<!-- Inject category data for subcategory JS -->
+<script
+  id="categories-data"
+  type="application/json"
+  set:html={JSON.stringify(categories)}
+/>

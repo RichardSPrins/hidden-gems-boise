@@ -1,0 +1,159 @@
+---
+// src/layouts/PortalLayout.astro
+// Business owner portal — auth protected, sidebar nav
+
+import BaseLayout from "./BaseLayout.astro";
+import type { Props as BaseProps } from "./BaseLayout.astro";
+
+export interface Props extends BaseProps {
+  activeSection?: "listings" | "events" | "submission" | "account";
+}
+
+const { activeSection, ...baseProps } = Astro.props;
+
+const user = Astro.locals.user;
+
+const navItems = [
+  {
+    label: "My Listings",
+    href: "/portal/listings",
+    section: "listings",
+    icon: "🏪",
+  },
+  { label: "Events", href: "/portal/listings", section: "events", icon: "🗓" },
+  {
+    label: "Submission Status",
+    href: "/portal/submission",
+    section: "submission",
+    icon: "📋",
+  },
+  { label: "Account", href: "/portal/account", section: "account", icon: "👤" },
+];
+---
+
+<BaseLayout
+  {...baseProps}
+  noindex={true}
+  nofollow={true}
+  bodyClass="bg-gem-mist"
+>
+  <slot name="head" slot="head" />
+
+  <!-- Portal Header -->
+  <header
+    slot="header"
+    class="portal-header fixed top-0 left-0 right-0 z-50 bg-gem-dark border-b border-gem-border-dark"
+  >
+    <div class="flex items-center justify-between px-6 h-16">
+      <!-- Logo -->
+      <a
+        href="/"
+        class="font-display text-xl font-semibold text-white no-underline"
+      >
+        Hidden <span class="text-gem-gold">Gems</span>
+        <span class="text-white/40 text-sm font-sans font-normal ml-2"
+          >Business Portal</span
+        >
+      </a>
+
+      <!-- User menu -->
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-white/50 hidden sm:block">{user?.email}</span>
+        <form method="POST" action="/api/auth/sign-out">
+          <button
+            type="submit"
+            class="text-sm text-white/50 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            Sign Out
+          </button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <!-- Portal body -->
+  <div class="portal-body flex min-h-screen pt-16">
+    <!-- Sidebar -->
+    <aside
+      class="portal-sidebar w-64 shrink-0 bg-white border-r border-gem-border fixed top-16 bottom-0 left-0 overflow-y-auto hidden md:block"
+    >
+      <nav class="p-4" aria-label="Portal navigation">
+        <p
+          class="text-xs font-semibold tracking-widest uppercase text-gem-text-subtle px-3 mb-3"
+        >
+          Manage
+        </p>
+        <ul class="flex flex-col gap-1 list-none m-0 p-0">
+          {
+            navItems.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  class:list={[
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all no-underline",
+                    activeSection === item.section
+                      ? "bg-gem-gold/10 text-gem-gold border border-gem-gold/20"
+                      : "text-gem-text-muted hover:bg-gem-mist hover:text-gem-text",
+                  ]}
+                  aria-current={
+                    activeSection === item.section ? "page" : undefined
+                  }
+                >
+                  <span class="text-base">{item.icon}</span>
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+
+        <div class="mt-8 pt-4 border-t border-gem-border">
+          <a
+            href="/"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gem-text-muted hover:bg-gem-mist hover:text-gem-text transition-all no-underline"
+          >
+            <span>←</span>
+            Back to Directory
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Mobile nav bar -->
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gem-border flex"
+      aria-label="Mobile portal navigation"
+    >
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              "flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors no-underline",
+              activeSection === item.section
+                ? "text-gem-gold"
+                : "text-gem-text-subtle hover:text-gem-text",
+            ]}
+          >
+            <span class="text-lg">{item.icon}</span>
+            <span class="hidden xs:block">{item.label.split(" ")[0]}</span>
+          </a>
+        ))
+      }
+    </nav>
+
+    <!-- Main content -->
+    <main
+      id="main-content"
+      class="flex-1 md:ml-64 p-6 pb-24 md:pb-6 min-h-screen"
+    >
+      <!-- Page header slot -->
+      <slot name="page-header" />
+
+      <!-- Content -->
+      <slot />
+    </main>
+  </div>
+
+  <slot name="scripts" slot="scripts" />
+</BaseLayout>

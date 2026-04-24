@@ -1,0 +1,319 @@
+---
+// src/layouts/PublicLayout.astro
+// Public-facing pages — wraps BaseLayout with nav and footer
+
+import BaseLayout from "./BaseLayout.astro";
+import type { Props as BaseProps } from "./BaseLayout.astro";
+
+export interface Props extends BaseProps {
+  transparentNav?: boolean; // for hero pages where nav starts transparent
+}
+
+const { transparentNav = false, ...baseProps } = Astro.props;
+
+const navLinks = [
+  { label: "Explore", href: "/explore" },
+  { label: "Events", href: "/events" },
+  { label: "Gem of the Week", href: "/gems" },
+  { label: "Blog", href: "/blog" },
+];
+---
+
+<BaseLayout {...baseProps}>
+  <slot name="head" slot="head" />
+
+  <!-- NAV -->
+  <header
+    slot="header"
+    id="main-nav"
+    class:list={[
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+      transparentNav ? "nav-transparent" : "nav-solid",
+    ]}
+  >
+    <div
+      class="nav-inner max-w-7xl mx-auto px-6 py-4 flex items-center justify-between"
+    >
+      <!-- Logo -->
+      <a
+        href="/"
+        class="nav-logo font-display text-2xl font-semibold text-white no-underline"
+      >
+        Hidden <span class="text-gem-gold">Gems</span> Boise
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav
+        class="hidden lg:flex items-center gap-8"
+        aria-label="Main navigation"
+      >
+        <ul class="flex items-center gap-8 list-none m-0 p-0">
+          {
+            navLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm font-medium tracking-wide text-white/80 hover:text-gem-gold transition-colors no-underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <a
+          href="/submit"
+          class="px-5 py-2 rounded-full bg-gem-gold text-gem-dark text-sm font-semibold hover:bg-gem-gold-light transition-colors no-underline"
+        >
+          List Your Business
+        </a>
+      </nav>
+
+      <!-- Mobile menu button -->
+      <button
+        id="mobile-menu-btn"
+        class="lg:hidden flex flex-col gap-1.5 p-2"
+        aria-label="Toggle menu"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span class="block w-6 h-0.5 bg-white transition-all" id="burger-1"
+        ></span>
+        <span class="block w-6 h-0.5 bg-white transition-all" id="burger-2"
+        ></span>
+        <span class="block w-6 h-0.5 bg-white transition-all" id="burger-3"
+        ></span>
+      </button>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div
+      id="mobile-menu"
+      class="lg:hidden hidden border-t border-white/10 bg-gem-dark"
+      aria-hidden="true"
+    >
+      <nav
+        class="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4"
+        aria-label="Mobile navigation"
+      >
+        {
+          navLinks.map((link) => (
+            <a
+              href={link.href}
+              class="text-white/80 hover:text-gem-gold text-base font-medium transition-colors no-underline py-2 border-b border-white/5"
+            >
+              {link.label}
+            </a>
+          ))
+        }
+        <a
+          href="/submit"
+          class="mt-2 px-5 py-3 rounded-full bg-gem-gold text-gem-dark text-sm font-semibold text-center hover:bg-gem-gold-light transition-colors no-underline"
+        >
+          List Your Business
+        </a>
+        <div class="flex items-center gap-4 mt-2 pt-4 border-t border-white/10">
+          <a
+            href="/login"
+            class="text-white/60 hover:text-white text-sm transition-colors no-underline"
+          >
+            Sign In
+          </a>
+          <span class="text-white/20">|</span>
+          <a
+            href="/portal"
+            class="text-white/60 hover:text-white text-sm transition-colors no-underline"
+          >
+            Business Portal
+          </a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <slot />
+
+  <!-- FOOTER -->
+  <footer slot="footer" class="bg-gem-dark border-t border-gem-border-dark">
+    <div class="max-w-7xl mx-auto px-6 py-16">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <!-- Brand -->
+        <div class="md:col-span-1">
+          <a
+            href="/"
+            class="font-display text-2xl font-semibold text-white no-underline"
+          >
+            Hidden <span class="text-gem-gold">Gems</span> Boise
+          </a>
+          <p class="mt-3 text-sm text-white/50 leading-relaxed">
+            Curated local directory spotlighting the best independently owned
+            businesses across the Treasure Valley.
+          </p>
+        </div>
+
+        <!-- Explore -->
+        <div>
+          <h3
+            class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
+          >
+            Explore
+          </h3>
+          <ul class="flex flex-col gap-3 list-none m-0 p-0">
+            {
+              [
+                { label: "All Businesses", href: "/explore" },
+                { label: "Events", href: "/events" },
+                { label: "Gem of the Week", href: "/gems" },
+                { label: "Blog", href: "/blog" },
+              ].map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-sm text-white/50 hover:text-gem-gold transition-colors no-underline"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <!-- Business -->
+        <div>
+          <h3
+            class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
+          >
+            Business
+          </h3>
+          <ul class="flex flex-col gap-3 list-none m-0 p-0">
+            {
+              [
+                { label: "List Your Business", href: "/submit" },
+                { label: "Business Portal", href: "/portal" },
+                { label: "About Us", href: "/about" },
+                { label: "Contact", href: "/contact" },
+              ].map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-sm text-white/50 hover:text-gem-gold transition-colors no-underline"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <!-- Legal -->
+        <div>
+          <h3
+            class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
+          >
+            Legal
+          </h3>
+          <ul class="flex flex-col gap-3 list-none m-0 p-0">
+            {
+              [
+                { label: "Terms of Service", href: "/terms" },
+                { label: "Privacy Policy", href: "/privacy" },
+              ].map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-sm text-white/50 hover:text-gem-gold transition-colors no-underline"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div
+        class="pt-8 border-t border-gem-border-dark flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
+        <p class="text-xs text-white/30">
+          © {new Date().getFullYear()} Hidden Gems Boise. All rights reserved.
+        </p>
+        <p class="text-xs text-white/20">
+          Proudly local. Treasure Valley made.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <slot name="scripts" slot="scripts" />
+</BaseLayout>
+
+<style>
+  .nav-transparent {
+    background: transparent;
+  }
+
+  .nav-solid {
+    background: rgba(13, 13, 13, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  :global(.nav-scrolled) {
+    background: rgba(13, 13, 13, 0.95) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 24px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+<script>
+  // Scroll-based nav
+  const nav = document.getElementById("main-nav");
+  if (nav?.classList.contains("nav-transparent")) {
+    window.addEventListener("scroll", () => {
+      nav.classList.toggle("nav-scrolled", window.scrollY > 60);
+    });
+  }
+
+  // Mobile menu
+  const btn = document.getElementById("mobile-menu-btn");
+  const menu = document.getElementById("mobile-menu");
+  const b1 = document.getElementById("burger-1");
+  const b2 = document.getElementById("burger-2");
+  const b3 = document.getElementById("burger-3");
+
+  btn?.addEventListener("click", () => {
+    const isOpen = menu?.classList.contains("hidden") === false;
+    menu?.classList.toggle("hidden");
+    menu?.setAttribute("aria-hidden", isOpen ? "true" : "false");
+    btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+
+    if (!isOpen) {
+      b1?.classList.add("rotate-45", "translate-y-2");
+      b2?.classList.add("opacity-0");
+      b3?.classList.add("-rotate-45", "-translate-y-2");
+    } else {
+      b1?.classList.remove("rotate-45", "translate-y-2");
+      b2?.classList.remove("opacity-0");
+      b3?.classList.remove("-rotate-45", "-translate-y-2");
+    }
+  });
+
+  // Close mobile menu on nav link click
+  menu?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      menu.setAttribute("aria-hidden", "true");
+      btn?.setAttribute("aria-expanded", "false");
+      b1?.classList.remove("rotate-45", "translate-y-2");
+      b2?.classList.remove("opacity-0");
+      b3?.classList.remove("-rotate-45", "-translate-y-2");
+    });
+  });
+</script>

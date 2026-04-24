@@ -1,0 +1,1097 @@
+---
+// src/pages/events/[id].astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { GET } from "@/pages/api/web/events/details";
+
+const { id } = Astro.params;
+
+const apiUrl = new URL(Astro.request.url);
+apiUrl.searchParams.set("id", id ?? "");
+
+const response = await GET({ request: new Request(apiUrl.toString()) } as any);
+const data = await response.json();
+
+if (data.notFound) {
+  return Astro.redirect("/events");
+}
+
+const { evt, comments, related } = data;
+
+const eventCategories: Record<string, string> = {
+  GRAND_OPENING: "Grand Opening",
+  SALE_AND_PROMOTION: "Sale & Promotion",
+  WORKSHOP_AND_CLASS: "Workshop & Class",
+  LIVE_MUSIC_AND_ENTERTAINMENT: "Live Music",
+  COMMUNITY_AND_NETWORKING: "Community",
+  FOOD_AND_DRINK_SPECIAL: "Food & Drink Special",
+  SEASONAL_AND_HOLIDAY: "Seasonal & Holiday",
+  CHARITY_AND_FUNDRAISER: "Charity & Fundraiser",
+  OTHER: "Event",
+};
+
+const eventCategoryIcons: Record<string, string> = {
+  GRAND_OPENING: "🎊",
+  SALE_AND_PROMOTION: "🏷️",
+  WORKSHOP_AND_CLASS: "📝",
+  LIVE_MUSIC_AND_ENTERTAINMENT: "🎵",
+  COMMUNITY_AND_NETWORKING: "🤝",
+  FOOD_AND_DRINK_SPECIAL: "🍽️",
+  SEASONAL_AND_HOLIDAY: "🌟",
+  CHARITY_AND_FUNDRAISER: "❤️",
+  OTHER: "📅",
+};
+
+const recurrenceLabels: Record<string, string> = {
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Every two weeks",
+  MONTHLY: "Monthly",
+};
+
+function formatFullDate(dateStr: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
+}
+
+function formatShortDate(dateStr: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
+}
+
+function formatCommentDate(dateStr: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(dateStr));
+}
+
+function renderStars(rating: number) {
+  return "★".repeat(rating) + "☆".repeat(5 - rating);
+}
+
+function getCalendarUrl(evt: any) {
+  const start = new Date(evt.startDateTime);
+  const end = evt.endDateTime
+    ? new Date(evt.endDateTime)
+    : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const location = evt.location
+    ? `${evt.location.address}, ${evt.location.city}`
+    : "Boise, ID";
+  return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(evt.title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(evt.description ?? "")}&location=${encodeURIComponent(location)}`;
+}
+
+const googleMapsUrl = evt.location
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${evt.location.address}, ${evt.location.city}`)}`
+  : null;
+
+const primaryImage = evt.business?.images?.[0];
+const categoryLabel = eventCategories[evt.category] ?? "Event";
+const categoryIcon = eventCategoryIcons[evt.category] ?? "📅";
+---
+
+<PublicLayout
+  title={evt.title}
+  description={evt.description ??
+    `${evt.title} at ${evt.business?.name} in Boise, ID`}
+  image={primaryImage?.url}
+>
+  <!-- HERO -->
+  <div class="event-hero">
+    <div
+      class="event-hero-bg"
+      style={primaryImage ? `background-image: url('${primaryImage.url}')` : ""}
+    >
+    </div>
+    <div class="event-hero-overlay"></div>
+    <div class="event-hero-content section-container">
+      <nav class="hero-breadcrumb" aria-label="Breadcrumb">
+        <a href="/events">Events</a>
+        <span>›</span>
+        <span>{categoryLabel}</span>
+      </nav>
+
+      <div class="event-hero-cat">
+        <span>{categoryIcon}</span>
+        <span>{categoryLabel}</span>
+        {
+          evt.isRecurring && (
+            <span class="event-recurring-hero-badge">↻ Recurring</span>
+          )
+        }
+      </div>
+
+      <h1 class="event-hero-title">{evt.title}</h1>
+
+      <div class="event-hero-meta">
+        <span class="event-hero-meta-item">
+          🕐 {formatFullDate(evt.startDateTime)}
+        </span>
+        {
+          evt.location && (
+            <span class="event-hero-meta-item">
+              📍 {evt.location.neighborhood ?? evt.location.city}
+            </span>
+          )
+        }
+        <a href={`/listings/${evt.business.slug}`} class="event-hero-biz">
+          by {evt.business.name}
+        </a>
+      </div>
+
+      <div class="event-hero-ctas">
+        {
+          evt.ticketUrl && (
+            <a
+              href={evt.ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-gold"
+            >
+              Get Tickets →
+            </a>
+          )
+        }
+        <a
+          href={getCalendarUrl(evt)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-outline-white"
+        >
+          + Add to Calendar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="event-layout section-container">
+    <!-- LEFT -->
+    <div class="event-main">
+      <!-- About -->
+      <section class="listing-section">
+        <h2 class="listing-section-title">About This Event</h2>
+        {
+          evt.description ? (
+            <p class="event-description">{evt.description}</p>
+          ) : (
+            <p
+              class="event-description"
+              style="color: var(--color-gem-text-subtle)"
+            >
+              No description provided.
+            </p>
+          )
+        }
+      </section>
+
+      <!-- Date & Time Details -->
+      <section class="listing-section">
+        <h2 class="listing-section-title">Date & Time</h2>
+        <div class="event-datetime-grid">
+          <div class="event-datetime-item">
+            <span class="event-datetime-icon">📅</span>
+            <div>
+              <div class="event-datetime-label">Starts</div>
+              <div class="event-datetime-value">
+                {formatFullDate(evt.startDateTime)}
+              </div>
+            </div>
+          </div>
+          {
+            evt.endDateTime && (
+              <div class="event-datetime-item">
+                <span class="event-datetime-icon">🏁</span>
+                <div>
+                  <div class="event-datetime-label">Ends</div>
+                  <div class="event-datetime-value">
+                    {formatFullDate(evt.endDateTime)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+          {
+            evt.isRecurring && (
+              <div class="event-datetime-item">
+                <span class="event-datetime-icon">↻</span>
+                <div>
+                  <div class="event-datetime-label">Repeats</div>
+                  <div class="event-datetime-value">
+                    {recurrenceLabels[evt.recurrenceFrequency] ??
+                      evt.recurrenceFrequency}
+                    {evt.recurrenceEndsAt &&
+                      ` until ${new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(new Date(evt.recurrenceEndsAt))}`}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </div>
+      </section>
+
+      <!-- Location -->
+      {
+        evt.location && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Location</h2>
+            <div class="event-location-card">
+              <div class="event-location-info">
+                <div class="event-location-name">{evt.business.name}</div>
+                <div class="event-location-address">
+                  {evt.location.address}
+                  <br />
+                  {evt.location.city}, ID
+                </div>
+                {evt.location.neighborhood && (
+                  <div class="event-location-neighborhood">
+                    {evt.location.neighborhood}
+                  </div>
+                )}
+              </div>
+              {googleMapsUrl && (
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-outline-dark event-directions-btn"
+                >
+                  Get Directions →
+                </a>
+              )}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Comments -->
+      <section class="listing-section" id="comments">
+        <div class="reviews-header">
+          <h2 class="listing-section-title">
+            Comments
+            {
+              comments.length > 0 && (
+                <span class="reviews-count">({comments.length})</span>
+              )
+            }
+          </h2>
+        </div>
+
+        {
+          comments.length > 0 ? (
+            <div class="reviews-list">
+              {comments.map((c: any) => (
+                <div class="review-item">
+                  <div class="review-header">
+                    <div class="review-author-wrap">
+                      <div class="review-avatar">
+                        {c.authorName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div class="review-author">{c.authorName}</div>
+                        <div class="review-date">
+                          {formatCommentDate(c.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                    {c.rating && (
+                      <div class="review-stars">{renderStars(c.rating)}</div>
+                    )}
+                  </div>
+                  <p class="review-body">{c.body}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p class="no-reviews">No comments yet. Be the first!</p>
+          )
+        }
+
+        <!-- Comment form -->
+        <div class="review-form-wrap">
+          <h3 class="review-form-title">Leave a Comment</h3>
+          <form class="review-form" id="comment-form">
+            <input type="hidden" name="eventId" value={evt.id} />
+            <div class="form-row">
+              <div class="form-field">
+                <label class="gem-label" for="c-name">Your Name</label>
+                <input
+                  class="gem-input"
+                  id="c-name"
+                  name="authorName"
+                  type="text"
+                  placeholder="Jane Smith"
+                  required
+                />
+              </div>
+              <div class="form-field">
+                <label class="gem-label" for="c-email">Email</label>
+                <input
+                  class="gem-input"
+                  id="c-email"
+                  name="authorEmail"
+                  type="email"
+                  placeholder="jane@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="gem-label">Rating (optional)</label>
+              <div class="star-picker" role="group" aria-label="Rating">
+                {
+                  [1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      type="button"
+                      class="star-pick-btn"
+                      data-value={n}
+                      aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                    >
+                      ☆
+                    </button>
+                  ))
+                }
+              </div>
+              <input type="hidden" name="rating" id="rating-input" value="" />
+            </div>
+
+            <div class="form-field">
+              <label class="gem-label" for="c-body">Comment</label>
+              <textarea
+                class="gem-textarea"
+                id="c-body"
+                name="body"
+                placeholder="Share your thoughts about this event…"
+                required></textarea>
+            </div>
+
+            <button type="submit" class="btn-gold">Post Comment →</button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="listing-sidebar">
+      <!-- Ticket CTA -->
+      {
+        evt.ticketUrl && (
+          <div
+            class="sidebar-card"
+            style="background: var(--color-gem-dark); border-color: var(--color-gem-border-dark);"
+          >
+            <a
+              href={evt.ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-gold w-full text-center"
+            >
+              Get Tickets →
+            </a>
+            <a
+              href={getCalendarUrl(evt)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-outline-white w-full text-center"
+              style="margin-top: 0.75rem;"
+            >
+              + Add to Calendar
+            </a>
+          </div>
+        )
+      }
+
+      {
+        !evt.ticketUrl && (
+          <div
+            class="sidebar-card"
+            style="background: var(--color-gem-dark); border-color: var(--color-gem-border-dark);"
+          >
+            <a
+              href={getCalendarUrl(evt)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-gold w-full text-center"
+            >
+              + Add to Calendar
+            </a>
+          </div>
+        )
+      }
+
+      <!-- Business Card -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-card-title">Hosted by</h3>
+        <div class="event-biz-card">
+          {
+            primaryImage && (
+              <img
+                src={primaryImage.url}
+                alt={evt.business.name}
+                class="event-biz-img"
+                loading="lazy"
+              />
+            )
+          }
+          <div class="event-biz-info">
+            <div class="event-biz-cat">{evt.business.category.name}</div>
+            <div class="event-biz-name">{evt.business.name}</div>
+            {
+              evt.business.contact?.phone && (
+                <a
+                  href={`tel:${evt.business.contact.phone}`}
+                  class="contact-link"
+                >
+                  {evt.business.contact.phone}
+                </a>
+              )
+            }
+            <a
+              href={`/listings/${evt.business.slug}`}
+              class="btn-outline-dark event-view-biz-btn"
+            >
+              View Listing →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Details Card -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-card-title">Event Details</h3>
+        <div class="contact-list">
+          <div class="contact-item">
+            <span class="contact-icon">{categoryIcon}</span>
+            <span>{categoryLabel}</span>
+          </div>
+          <div class="contact-item">
+            <span class="contact-icon">📅</span>
+            <span>{formatShortDate(evt.startDateTime)}</span>
+          </div>
+          {
+            evt.endDateTime && (
+              <div class="contact-item">
+                <span class="contact-icon">🏁</span>
+                <span>Ends {formatShortDate(evt.endDateTime)}</span>
+              </div>
+            )
+          }
+          {
+            evt.isRecurring && (
+              <div class="contact-item">
+                <span class="contact-icon">↻</span>
+                <span>
+                  {recurrenceLabels[evt.recurrenceFrequency] ?? "Recurring"}
+                </span>
+              </div>
+            )
+          }
+          {
+            evt.location && (
+              <div class="contact-item">
+                <span class="contact-icon">📍</span>
+                <span>{evt.location.neighborhood ?? evt.location.city}</span>
+              </div>
+            )
+          }
+        </div>
+      </div>
+
+      <!-- Share -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-card-title">Share This Event</h3>
+        <div class="share-buttons">
+          <button
+            class="share-btn"
+            onclick={`navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))`}
+          >
+            🔗 Copy Link
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- RELATED EVENTS -->
+  {
+    related?.length > 0 && (
+      <section class="related-section">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-eyebrow">More Events</span>
+            <h2 class="section-title">
+              You Might Also <em>Like</em>
+            </h2>
+          </div>
+          <div class="related-events-grid">
+            {related.map((r: any) => {
+              const d = formatShortDate(r.startDateTime);
+              return (
+                <a href={`/events/${r.id}`} class="event-card">
+                  <div class="event-card-date-bar">
+                    <time datetime={r.startDateTime}>{d}</time>
+                  </div>
+                  <div class="event-card-body">
+                    <div class="event-card-cat">
+                      {eventCategoryIcons[r.category]}{" "}
+                      {eventCategories[r.category]}
+                    </div>
+                    <div class="event-card-title">{r.title}</div>
+                    <div class="event-card-biz">{r.business.name}</div>
+                    {r.location?.neighborhood && (
+                      <div class="event-card-loc">
+                        {r.location.neighborhood}
+                      </div>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</PublicLayout>
+
+<style>
+  /* Hero */
+  .event-hero {
+    position: relative;
+    min-height: 400px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    padding-top: 4rem;
+  }
+
+  .event-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--color-gem-dark-2);
+  }
+
+  .event-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 13, 13, 0.25) 0%,
+      rgba(13, 13, 13, 0.88) 100%
+    );
+  }
+
+  .event-hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: 2.5rem;
+    width: 100%;
+  }
+
+  .hero-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1rem;
+  }
+  .hero-breadcrumb a {
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .hero-breadcrumb a:hover {
+    color: var(--color-gem-gold);
+  }
+
+  .event-hero-cat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+    margin-bottom: 0.75rem;
+  }
+
+  .event-recurring-hero-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(201, 168, 76, 0.15);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 100px;
+    color: var(--color-gem-gold);
+  }
+
+  .event-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+  }
+
+  .event-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .event-hero-meta-item {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .event-hero-biz {
+    font-size: 0.9rem;
+    color: var(--color-gem-gold);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .event-hero-biz:hover {
+    text-decoration: underline;
+  }
+  .event-hero-ctas {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* Layout */
+  .event-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .event-layout {
+      grid-template-columns: 1fr;
+    }
+    .listing-sidebar {
+      order: -1;
+    }
+  }
+
+  /* Sections */
+  .listing-section {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .listing-section-title {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .reviews-count {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-gem-text-muted);
+  }
+  .reviews-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .event-description {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+  }
+
+  /* Date & Time */
+  .event-datetime-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .event-datetime-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+  .event-datetime-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+  .event-datetime-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gem-text-subtle);
+    margin-bottom: 0.125rem;
+  }
+  .event-datetime-value {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+  }
+
+  /* Location */
+  .event-location-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--color-gem-mist);
+    border-radius: 10px;
+  }
+  .event-location-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.25rem;
+  }
+  .event-location-address {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+  .event-location-neighborhood {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+    margin-top: 0.25rem;
+  }
+  .event-directions-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+
+  /* Reviews/Comments */
+  .reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .review-item {
+    padding: 1.25rem;
+    background: var(--color-gem-mist);
+    border-radius: 10px;
+  }
+  .review-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+  }
+  .review-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .review-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    flex-shrink: 0;
+  }
+  .review-author {
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+  .review-date {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+  }
+  .review-stars {
+    color: var(--color-gem-gold);
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  .review-body {
+    font-size: 0.9rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.65;
+  }
+  .no-reviews {
+    color: var(--color-gem-text-subtle);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .review-form-wrap {
+    border-top: 1px solid var(--color-gem-border);
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .review-form-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  .review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  @media (max-width: 480px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .star-picker {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+  .star-pick-btn {
+    font-size: 1.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gem-border);
+    transition: color 0.1s;
+    padding: 0;
+    line-height: 1;
+  }
+  .star-pick-btn.filled {
+    color: var(--color-gem-gold);
+  }
+
+  /* Sidebar */
+  .listing-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .sidebar-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.25rem;
+  }
+  .sidebar-card-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color-gem-text);
+  }
+
+  .event-biz-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .event-biz-img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .event-biz-cat {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+  }
+  .event-biz-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .event-view-biz-btn {
+    display: block;
+    text-align: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    margin-top: 0.5rem;
+  }
+
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+  }
+  .contact-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .contact-link {
+    color: var(--color-gem-gold);
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .contact-link:hover {
+    text-decoration: underline;
+  }
+
+  .share-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .share-btn {
+    padding: 0.625rem 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    background: white;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: var(--color-gem-text-muted);
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .share-btn:hover {
+    border-color: var(--color-gem-gold);
+    color: var(--color-gem-text);
+  }
+
+  /* Related */
+  .related-section {
+    background: var(--color-gem-dark-2);
+    padding: 4rem 2rem;
+  }
+  .related-events-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  @media (max-width: 768px) {
+    .related-events-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .related-events-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .w-full {
+    width: 100%;
+    justify-content: center;
+  }
+</style>
+
+<script>
+  // Star picker
+  const starBtns = document.querySelectorAll(".star-pick-btn");
+  const ratingInput = document.getElementById(
+    "rating-input"
+  ) as HTMLInputElement;
+  let selectedRating = 0;
+
+  starBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedRating = parseInt((btn as HTMLElement).dataset.value ?? "0");
+      ratingInput.value = String(selectedRating);
+      starBtns.forEach((b, i) => {
+        b.textContent = i < selectedRating ? "★" : "☆";
+        b.classList.toggle("filled", i < selectedRating);
+      });
+    });
+
+    btn.addEventListener("mouseenter", () => {
+      const hoverVal = parseInt((btn as HTMLElement).dataset.value ?? "0");
+      starBtns.forEach((b, i) => {
+        b.textContent = i < hoverVal ? "★" : "☆";
+      });
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      starBtns.forEach((b, i) => {
+        b.textContent = i < selectedRating ? "★" : "☆";
+      });
+    });
+  });
+
+  // Comment form
+  document
+    .getElementById("comment-form")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const data = new FormData(form);
+
+      try {
+        const res = await fetch("/api/event-comments", {
+          method: "POST",
+          body: JSON.stringify(Object.fromEntries(data)),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (res.ok) {
+          form.reset();
+          selectedRating = 0;
+          ratingInput.value = "";
+          starBtns.forEach((b) => {
+            b.textContent = "☆";
+            b.classList.remove("filled");
+          });
+          alert("Thanks for your comment! It will appear after moderation.");
+        } else {
+          alert("Something went wrong. Please try again.");
+        }
+      } catch {
+        alert("Something went wrong. Please try again.");
+      }
+    });
+</script>

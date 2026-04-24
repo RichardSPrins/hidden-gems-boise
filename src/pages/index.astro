@@ -1,17 +1,1150 @@
 ---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { GET } from "./api/web/home";
 
+const response = await GET(Astro);
+const {
+  categories,
+  trending,
+  upcomingEvents: rawEvents,
+} = await response.json();
+
+const upcomingEvents = rawEvents.map((evt: any) => ({
+  ...evt,
+  startDateTime: new Date(evt.startDateTime),
+  endDateTime: evt.endDateTime ? new Date(evt.endDateTime) : null,
+}));
+
+// FAQs
+const faqs = [
+  {
+    q: "What is Hidden Gems Boise?",
+    a: "Hidden Gems Boise is a curated local directory spotlighting the best independently owned businesses across the Treasure Valley, from beloved neighborhood staples to exciting new arrivals.",
+  },
+  {
+    q: "How are businesses selected?",
+    a: "Every listing is vetted and approved by our team. We look for quality, community impact, and what makes each business genuinely worth visiting.",
+  },
+  {
+    q: "What is the Gem of the Week?",
+    a: "Each week we spotlight one standout local business with an in-depth feature — their story, what makes them special, and why you should check them out.",
+  },
+  {
+    q: "How do I get my business listed?",
+    a: "Submit your business through our simple form. Our team reviews every submission and will reach out to complete your listing.",
+  },
+  {
+    q: "Is it free to be listed?",
+    a: "Basic listings are completely free. We also offer enhanced listing options for businesses that want more visibility.",
+  },
+  {
+    q: "How do I leave a review?",
+    a: "Visit any business listing page and scroll to the reviews section. You'll need to provide your name and email to submit a review.",
+  },
+];
+
+// Category icons mapping (Tabler icon names)
+const categoryIcons: Record<string, string> = {
+  "Food & Drink": "🍽️",
+  "Health & Wellness": "💆",
+  Shopping: "🛍️",
+  "Home Services": "🔧",
+  "Arts & Entertainment": "🎭",
+  "Professional Services": "💼",
+  Education: "📚",
+  Automotive: "🚗",
+};
+
+function formatEventDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function renderStars(rating: number) {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  const empty = 5 - full - (half ? 1 : 0);
+  return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
+}
+
+const priceMap: Record<string, string> = {
+  ONE: "$",
+  TWO: "$$",
+  THREE: "$$$",
+  FOUR: "$$$$",
+};
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<PublicLayout>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Treasure Valley's Curated Directory</p>
+      <h1 class="hero-title">Discover Boise's<br /><em>Hidden Gems</em></h1>
+      <p class="hero-subtitle">
+        Handpicked local businesses worth knowing about, from beloved
+        neighborhood staples to exciting new arrivals.
+      </p>
+
+      <!-- Search -->
+      <div class="search-box">
+        <div class="search-tabs">
+          <button class="search-tab active" data-tab="places">🏪 Places</button>
+          <button class="search-tab" data-tab="events">🗓 Events</button>
+        </div>
+
+        <form
+          class="search-panel active"
+          id="tab-places"
+          action="/explore"
+          method="get"
+        >
+          <div class="search-row">
+            <input
+              class="search-input"
+              name="q"
+              type="text"
+              placeholder="Search businesses, cuisine, services…"
+              autocomplete="off"
+            />
+            <select class="search-select" name="category">
+              <option value="">All Categories</option>
+              {categories.map((c) => <option value={c.slug}>{c.name}</option>)}
+            </select>
+            <button type="submit" class="search-btn">Search</button>
+          </div>
+        </form>
+
+        <form
+          class="search-panel"
+          id="tab-events"
+          action="/events"
+          method="get"
+        >
+          <div class="search-row">
+            <input
+              class="search-input"
+              name="q"
+              type="text"
+              placeholder="Search events, concerts, workshops…"
+              autocomplete="off"
+            />
+            <select class="search-select" name="category">
+              <option value="">All Types</option>
+              <option value="GRAND_OPENING">Grand Opening</option>
+              <option value="SALE_AND_PROMOTION">Sale & Promotion</option>
+              <option value="WORKSHOP_AND_CLASS">Workshop & Class</option>
+              <option value="LIVE_MUSIC_AND_ENTERTAINMENT">Live Music</option>
+              <option value="COMMUNITY_AND_NETWORKING">Community</option>
+              <option value="FOOD_AND_DRINK_SPECIAL">Food & Drink</option>
+              <option value="SEASONAL_AND_HOLIDAY">Seasonal</option>
+              <option value="CHARITY_AND_FUNDRAISER">Charity</option>
+            </select>
+            <button type="submit" class="search-btn">Search</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="categories-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">Browse by Category</span>
+        <h2 class="section-title">What are you <em>looking for?</em></h2>
+        <p class="section-sub">
+          Explore hundreds of local businesses across dozens of categories.
+        </p>
+      </div>
+      <div class="categories-grid">
+        {
+          categories.map((cat) => (
+            <a href={`/explore/${cat.slug}`} class="category-card">
+              <span class="category-icon">
+                {categoryIcons[cat.name] ?? "📍"}
+              </span>
+              <span class="category-name">{cat.name}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- TRENDING BUSINESSES -->
+  <section class="carousel-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">Trending Now</span>
+        <h2 class="section-title">Top Rated <em>Local Gems</em></h2>
+        <p class="section-sub">The businesses Boise keeps coming back to.</p>
+      </div>
+      <div class="carousel-wrapper">
+        <button class="carousel-btn prev" id="biz-prev" aria-label="Previous"
+          >←</button
+        >
+        <div class="embla" id="biz-carousel">
+          <div class="embla__container">
+            {
+              trending.length > 0 ? (
+                trending.map((biz) => (
+                  <div class="embla__slide">
+                    <a href={`/listings/${biz.slug}`} class="biz-card">
+                      <div class="biz-card-img">
+                        {biz.images[0] ? (
+                          <img
+                            src={biz.images[0].url}
+                            alt={biz.images[0].alt ?? biz.name}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span>
+                            {categoryIcons[biz.category.name] ?? "📍"}
+                          </span>
+                        )}
+                      </div>
+                      <div class="biz-card-body">
+                        <div class="biz-card-meta">
+                          <span class="biz-card-cat">{biz.category.name}</span>
+                          {biz.pricePoint && (
+                            <span class="biz-card-price">
+                              {priceMap[biz.pricePoint]}
+                            </span>
+                          )}
+                        </div>
+                        <div class="biz-card-name">{biz.name}</div>
+                        <div class="biz-card-location">Boise, ID</div>
+                        {biz.reviewCount > 0 && (
+                          <div class="biz-card-rating">
+                            <span>{renderStars(biz.averageRating)}</span>
+                            <span>({biz.reviewCount})</span>
+                          </div>
+                        )}
+                      </div>
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <div class="embla__slide">
+                  <div
+                    class="biz-card"
+                    style="padding:2rem;text-align:center;color:var(--gem-text-muted)"
+                  >
+                    Listings coming soon
+                  </div>
+                </div>
+              )
+            }
+          </div>
+        </div>
+        <button class="carousel-btn next" id="biz-next" aria-label="Next"
+          >→</button
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="section-container">
+      <div class="cta-inner">
+        <div>
+          <h2 class="cta-title">
+            Own a local business?<br /><em>You belong here.</em>
+          </h2>
+          <p class="cta-sub">
+            Join hundreds of Treasure Valley businesses connecting with
+            customers who are actively looking for what you offer. Free to get
+            started.
+          </p>
+        </div>
+        <div class="cta-actions">
+          <a href="/submit" class="btn-gold">List Your Business →</a>
+          <a href="/about" class="btn-outline-white">Learn More</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST SIGNALS -->
+  <section class="trust-section">
+    <div class="section-container">
+      <div class="trust-grid">
+        <div class="trust-item">
+          <div class="trust-icon">🏙️</div>
+          <div class="trust-num">100+</div>
+          <div class="trust-label">Local Businesses Listed</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">✅</div>
+          <div class="trust-num">100%</div>
+          <div class="trust-label">Vetted & Approved Listings</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🗺️</div>
+          <div class="trust-num">50+</div>
+          <div class="trust-label">Neighborhoods Covered</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">⭐</div>
+          <div class="trust-num">500+</div>
+          <div class="trust-label">Verified Reviews</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">💎</div>
+          <div class="trust-num">52</div>
+          <div class="trust-label">Gems Spotlighted Yearly</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPCOMING EVENTS -->
+  <section class="carousel-section dark">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">What's Happening</span>
+        <h2 class="section-title" style="color:white">
+          Upcoming <em>Events</em>
+        </h2>
+        <p class="section-sub" style="color:rgba(255,255,255,0.5)">
+          Don't miss what's going on around the Treasure Valley.
+        </p>
+      </div>
+      <div class="carousel-wrapper">
+        <button class="carousel-btn prev" id="evt-prev" aria-label="Previous"
+          >←</button
+        >
+        <div class="embla" id="evt-carousel">
+          <div class="embla__container">
+            {
+              upcomingEvents.length > 0 ? (
+                upcomingEvents.map((evt) => (
+                  <div class="embla__slide">
+                    <a href={`/events/${evt.id}`} class="event-card">
+                      <div class="event-card-date-bar">
+                        <time datetime={evt.startDateTime.toISOString()}>
+                          {formatEventDate(evt.startDateTime)}
+                        </time>
+                      </div>
+                      <div class="event-card-body">
+                        <div class="event-card-cat">
+                          {evt.category.replace(/_/g, " ")}
+                        </div>
+                        <div class="event-card-title">{evt.title}</div>
+                        <div class="event-card-biz">{evt.business.name}</div>
+                        {evt.location && (
+                          <div class="event-card-loc">
+                            {evt.location.neighborhood ?? evt.location.city}
+                          </div>
+                        )}
+                      </div>
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <div class="embla__slide">
+                  <div
+                    class="event-card"
+                    style="padding:2rem;text-align:center;color:rgba(255,255,255,0.4)"
+                  >
+                    Events coming soon
+                  </div>
+                </div>
+              )
+            }
+          </div>
+        </div>
+        <button class="carousel-btn next" id="evt-next" aria-label="Next"
+          >→</button
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">How It Works</span>
+        <h2 class="section-title">Simple by <em>design</em></h2>
+        <p class="section-sub">
+          Getting found — or finding your next favorite spot — has never been
+          easier.
+        </p>
+      </div>
+      <div class="how-grid">
+        <div class="how-item">
+          <div class="how-title">Browse or Search</div>
+          <p class="how-text">
+            Explore by category, neighborhood, or keyword. Every listing is
+            handpicked and verified by our team.
+          </p>
+        </div>
+        <div class="how-item">
+          <div class="how-title">Discover the Details</div>
+          <p class="how-text">
+            Get hours, location, photos, reviews, and everything you need to
+            decide — all in one place.
+          </p>
+        </div>
+        <div class="how-item">
+          <div class="how-title">Visit & Support Local</div>
+          <p class="how-text">
+            Show up, support an independent business, and leave a review to help
+            your neighbors find them too.
+          </p>
+        </div>
+        <div class="how-item">
+          <div class="how-title">Get Your Business Listed</div>
+          <p class="how-text">
+            Submit your business in minutes. Our team reviews every submission
+            to keep the directory curated and trustworthy.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQS -->
+  <section class="faq-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-eyebrow">FAQ</span>
+        <h2 class="section-title">Questions? <em>Answered.</em></h2>
+      </div>
+      <div class="faq-list">
+        {
+          faqs.map((faq, i) => (
+            <div class="faq-item" id={`faq-${i}`}>
+              <button
+                class="faq-trigger"
+                aria-expanded="false"
+                aria-controls={`faq-body-${i}`}
+              >
+                {faq.q}
+                <span class="faq-icon">+</span>
+              </button>
+              <div class="faq-body" id={`faq-body-${i}`} role="region">
+                {faq.a}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+  <!-- CONTACT -->
+  <section class="contact-section" id="contact">
+    <div class="section-container">
+      <div class="contact-inner">
+        <div>
+          <p class="section-eyebrow">Get In Touch</p>
+          <h2 class="contact-lead">We'd love to <em>hear from you.</em></h2>
+          <p class="contact-sub">
+            Whether you have a question, want to suggest a business, or just
+            want to say hello — drop us a message and we'll get back to you.
+          </p>
+        </div>
+        <form class="contact-form" id="contact-form">
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="c-name">Name</label>
+              <input
+                class="form-input"
+                id="c-name"
+                name="name"
+                type="text"
+                placeholder="Your name"
+                required
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="c-email">Email</label>
+              <input
+                class="form-input"
+                id="c-email"
+                name="email"
+                type="email"
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="c-subject">Subject</label>
+            <input
+              class="form-input"
+              id="c-subject"
+              name="subject"
+              type="text"
+              placeholder="What's this about?"
+            />
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="c-message">Message</label>
+            <textarea
+              class="form-textarea"
+              id="c-message"
+              name="message"
+              placeholder="Tell us what's on your mind…"
+              required></textarea>
+          </div>
+          <button type="submit" class="form-submit">Send Message →</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import EmblaCarousel from "embla-carousel";
+
+    // Search tabs
+    document.querySelectorAll(".search-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = (tab as HTMLElement).dataset.tab;
+        document
+          .querySelectorAll(".search-tab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".search-panel")
+          .forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(`tab-${target}`)?.classList.add("active");
+      });
+    });
+
+    // Business carousel
+    const bizEl = document.getElementById("biz-carousel");
+    if (bizEl) {
+      const bizApi = EmblaCarousel(bizEl, { loop: false, align: "start" });
+      document
+        .getElementById("biz-prev")
+        ?.addEventListener("click", () => bizApi.scrollPrev());
+      document
+        .getElementById("biz-next")
+        ?.addEventListener("click", () => bizApi.scrollNext());
+    }
+
+    // Events carousel
+    const evtEl = document.getElementById("evt-carousel");
+    if (evtEl) {
+      const evtApi = EmblaCarousel(evtEl, { loop: false, align: "start" });
+      document
+        .getElementById("evt-prev")
+        ?.addEventListener("click", () => evtApi.scrollPrev());
+      document
+        .getElementById("evt-next")
+        ?.addEventListener("click", () => evtApi.scrollNext());
+    }
+
+    // FAQs
+    document.querySelectorAll(".faq-trigger").forEach((trigger) => {
+      trigger.addEventListener("click", () => {
+        const item = trigger.closest(".faq-item");
+        const isOpen = item?.classList.contains("open");
+        document
+          .querySelectorAll(".faq-item")
+          .forEach((i) => i.classList.remove("open"));
+        if (!isOpen) item?.classList.add("open");
+      });
+    });
+
+    // Contact form placeholder
+    document.getElementById("contact-form")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      alert("Thanks for reaching out! We'll get back to you soon.");
+      (e.target as HTMLFormElement).reset();
+    });
+  </script>
+  <style>
+    /* HERO */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url("https://images.unsplash.com/photo-1599946347371-68eb71b16afc?w=1800&auto=format&fit=crop&q=80");
+      background-size: cover;
+      background-position: center 30%;
+      transform: scale(1.05);
+      animation: heroZoom 12s ease-out forwards;
+    }
+
+    @keyframes heroZoom {
+      from {
+        transform: scale(1.05);
+      }
+      to {
+        transform: scale(1);
+      }
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(13, 13, 13, 0.3) 0%,
+        rgba(13, 13, 13, 0.55) 40%,
+        rgba(13, 13, 13, 0.75) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 2rem 1.25rem;
+      max-width: 900px;
+      width: 100%;
+      animation: heroFade 1s ease-out 0.3s both;
+    }
+
+    @keyframes heroFade {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--color-gem-gold);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-eyebrow::before,
+    .hero-eyebrow::after {
+      content: "";
+      display: block;
+      width: 2rem;
+      height: 1px;
+      background: var(--color-gem-gold);
+      opacity: 0.6;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 600;
+      line-height: 1.05;
+      color: white;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--color-gem-gold-light);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 2.5rem;
+    }
+
+    /* SEARCH BOX */
+    .search-box {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .search-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-gem-border);
+    }
+
+    .search-tab {
+      flex: 1;
+      padding: 0.875rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--color-gem-text-muted);
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .search-tab.active {
+      color: var(--color-gem-text);
+    }
+
+    .search-tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-gem-gold);
+    }
+
+    .search-panel {
+      display: none;
+      padding: 1rem;
+    }
+
+    .search-panel.active {
+      display: block;
+    }
+
+    .search-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    @media (min-width: 600px) {
+      .search-row {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--color-gem-border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--color-gem-text);
+      background: var(--color-gem-mist);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--color-gem-gold);
+      background: white;
+    }
+    .search-input::placeholder {
+      color: var(--color-gem-text-subtle);
+    }
+    .search-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--color-gem-border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--color-gem-text);
+      background: var(--color-gem-mist);
+      outline: none;
+      cursor: pointer;
+    }
+
+    @media (min-width: 600px) {
+      .search-select {
+        width: auto;
+        min-width: 140px;
+      }
+    }
+
+    .search-btn {
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      background: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    @media (min-width: 600px) {
+      .search-btn {
+        width: auto;
+      }
+    }
+
+    .search-btn:hover {
+      background: var(--color-gem-gold-light);
+    }
+
+    /* CATEGORIES */
+    .categories-section {
+      background: white;
+      padding: 5rem 2rem;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .categories-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CAROUSEL SECTIONS */
+    .carousel-section {
+      background: var(--color-gem-mist);
+      padding: 5rem 2rem;
+    }
+    .carousel-section.dark {
+      background: var(--color-gem-dark-2);
+    }
+
+    /* CTA */
+    .cta-section {
+      background: var(--color-gem-dark);
+      padding: 5rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(
+        circle,
+        rgba(201, 168, 76, 0.08) 0%,
+        transparent 70%
+      );
+      pointer-events: none;
+    }
+
+    .cta-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 3rem;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 600;
+      color: white;
+      line-height: 1.15;
+    }
+
+    .cta-title em {
+      font-style: italic;
+      color: var(--color-gem-gold);
+    }
+    .cta-sub {
+      margin-top: 0.75rem;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.9375rem;
+      max-width: 480px;
+    }
+    .cta-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* TRUST */
+    .trust-section {
+      background: white;
+      padding: 5rem 2rem;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+    }
+
+    .trust-item {
+      text-align: center;
+      padding: 1.5rem;
+    }
+    .trust-icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .trust-num {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--color-gem-gold);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .trust-label {
+      font-size: 0.875rem;
+      color: var(--color-gem-text-muted);
+      font-weight: 500;
+    }
+
+    /* HOW IT WORKS */
+    .how-section {
+      background: var(--color-gem-mist);
+      padding: 5rem 2rem;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2rem;
+      counter-reset: steps;
+    }
+
+    .how-item {
+      position: relative;
+      padding: 1.75rem;
+      background: white;
+      border-radius: 12px;
+      border: 1.5px solid var(--color-gem-border);
+      counter-increment: steps;
+    }
+
+    .how-item::before {
+      content: counter(steps, decimal-leading-zero);
+      display: block;
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--color-gem-gold);
+      opacity: 0.4;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .how-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .how-text {
+      font-size: 0.875rem;
+      color: var(--color-gem-text-muted);
+      line-height: 1.65;
+    }
+
+    /* FAQ */
+    .faq-section {
+      background: white;
+      padding: 5rem 2rem;
+    }
+    .faq-list {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--color-gem-border);
+    }
+    .faq-item:first-child {
+      border-top: 1px solid var(--color-gem-border);
+    }
+
+    .faq-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-gem-text);
+      gap: 1rem;
+    }
+
+    .faq-icon {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-gem-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--color-gem-gold);
+      transition: transform 0.2s;
+      line-height: 1;
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+    }
+    .faq-body {
+      display: none;
+      padding-bottom: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--color-gem-text-muted);
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-body {
+      display: block;
+    }
+
+    /* CONTACT */
+    .contact-section {
+      background: var(--color-gem-mist);
+      padding: 5rem 2rem;
+    }
+
+    .contact-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .contact-lead {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .contact-lead em {
+      font-style: italic;
+      color: var(--color-gem-gold);
+    }
+    .contact-sub {
+      color: var(--color-gem-text-muted);
+      font-size: 0.9375rem;
+      line-height: 1.7;
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--color-gem-text);
+    }
+
+    .form-input,
+    .form-textarea {
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--color-gem-border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--color-gem-text);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+      border-color: var(--color-gem-gold);
+    }
+    .form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-submit {
+      align-self: flex-start;
+      padding: 0.875rem 2rem;
+      background: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+      border: none;
+      border-radius: 100px;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .form-submit:hover {
+      background: var(--color-gem-gold-light);
+    }
+
+    @media (max-width: 768px) {
+      .cta-inner {
+        grid-template-columns: 1fr;
+      }
+      .cta-actions {
+        flex-direction: column;
+      }
+      .contact-inner {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</PublicLayout>

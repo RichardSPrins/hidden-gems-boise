@@ -1,0 +1,209 @@
+---
+// src/pages/terms.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+
+const lastUpdated = "April 2026";
+---
+
+<PublicLayout
+  title="Terms of Service — Hidden Gems Boise"
+  description="Terms of Service for Hidden Gems Boise."
+>
+  <div class="legal-layout section-container">
+    <div class="legal-header">
+      <h1 class="legal-title">Terms of Service</h1>
+      <p class="legal-updated">Last updated: {lastUpdated}</p>
+    </div>
+
+    <div class="legal-body">
+      <p class="legal-intro">
+        Please read these Terms of Service carefully before using Hidden Gems
+        Boise. By accessing or using our directory, you agree to be bound by
+        these terms.
+      </p>
+
+      <h2>1. Acceptance of Terms</h2>
+      <p>
+        By accessing and using Hidden Gems Boise ("the Directory"), you accept
+        and agree to be bound by these Terms of Service and our Privacy Policy.
+        If you do not agree to these terms, please do not use the Directory.
+      </p>
+
+      <h2>2. Description of Service</h2>
+      <p>
+        Hidden Gems Boise is a curated online directory of independently owned
+        businesses in the Treasure Valley, Boise, Idaho. We provide listing
+        services for local businesses and information resources for consumers.
+      </p>
+
+      <h2>3. Business Listings</h2>
+      <p>
+        All business listings are subject to review and approval by our team. We
+        reserve the right to accept, reject, modify, or remove any listing at
+        our sole discretion. By submitting a listing, you represent that:
+      </p>
+      <ul>
+        <li>You are the authorized owner or representative of the business</li>
+        <li>All information provided is accurate and up to date</li>
+        <li>
+          The business is independently owned (not a national chain or
+          franchise)
+        </li>
+        <li>
+          You will notify us of any material changes to your business
+          information
+        </li>
+      </ul>
+
+      <h2>4. Subscription and Payments</h2>
+      <p>
+        Paid listing tiers are billed on a monthly or annual basis. Billing
+        begins only after your listing has been reviewed and approved. You may
+        cancel your subscription at any time. Refunds are handled on a
+        case-by-case basis at our discretion.
+      </p>
+
+      <h2>5. User Conduct</h2>
+      <p>You agree not to use the Directory to:</p>
+      <ul>
+        <li>Submit false, misleading, or fraudulent information</li>
+        <li>Impersonate any person or business</li>
+        <li>Submit spam reviews or manipulate ratings</li>
+        <li>Violate any applicable laws or regulations</li>
+        <li>Interfere with the operation of the Directory</li>
+      </ul>
+
+      <h2>6. Reviews and User Content</h2>
+      <p>
+        By submitting a review or comment, you grant Hidden Gems Boise a
+        non-exclusive, royalty-free license to display and distribute that
+        content. We reserve the right to moderate, edit, or remove any
+        user-submitted content that violates these terms or our community
+        standards.
+      </p>
+
+      <h2>7. Intellectual Property</h2>
+      <p>
+        All content on Hidden Gems Boise, including text, graphics, logos, and
+        design, is the property of Hidden Gems Boise or its content suppliers
+        and is protected by applicable intellectual property laws.
+      </p>
+
+      <h2>8. Disclaimers</h2>
+      <p>
+        The Directory is provided "as is" without warranty of any kind. We do
+        not endorse or guarantee the quality, accuracy, or reliability of any
+        listed business. Always exercise your own judgment when engaging with
+        any business.
+      </p>
+
+      <h2>9. Limitation of Liability</h2>
+      <p>
+        Hidden Gems Boise shall not be liable for any indirect, incidental,
+        special, or consequential damages arising from your use of the Directory
+        or any listed business.
+      </p>
+
+      <h2>10. Changes to Terms</h2>
+      <p>
+        We reserve the right to modify these Terms at any time. Continued use of
+        the Directory after changes constitutes acceptance of the new Terms.
+      </p>
+
+      <h2>11. Contact</h2>
+      <p>
+        Questions about these Terms? Contact us at <a
+          href="mailto:hello@hiddengemsboise.com">hello@hiddengemsboise.com</a
+        >.
+      </p>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  .legal-layout {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-top: 4rem;
+    padding-bottom: 5rem;
+  }
+
+  .legal-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-gem-border);
+  }
+
+  .legal-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .legal-updated {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-subtle);
+  }
+
+  .legal-intro {
+    font-size: 1rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: var(--color-gem-mist);
+    border-radius: 8px;
+    border-left: 3px solid var(--color-gem-gold);
+  }
+
+  .legal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .legal-body :global(h2),
+  .legal-body h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-top: 2rem;
+    margin-bottom: 0.625rem;
+  }
+
+  .legal-body :global(p),
+  .legal-body p {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+
+  .legal-body :global(ul),
+  .legal-body ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .legal-body :global(li),
+  .legal-body li {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.65;
+  }
+
+  .legal-body :global(a),
+  .legal-body a {
+    color: var(--color-gem-gold);
+    text-decoration: none;
+  }
+
+  .legal-body :global(a):hover,
+  .legal-body a:hover {
+    text-decoration: underline;
+  }
+</style>

@@ -1,0 +1,151 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+---
+
+<PublicLayout
+  title="Submission Received — Hidden Gems Boise"
+  description="Thanks for submitting your business to Hidden Gems Boise. We'll be in touch soon."
+>
+  <div class="thankyou-wrap section-container">
+    <div class="thankyou-card">
+      <div class="thankyou-icon">💎</div>
+      <h1 class="thankyou-title">You're on the list.</h1>
+      <p class="thankyou-sub">
+        Thanks for submitting your business to Hidden Gems Boise. We personally
+        review every submission to keep the directory curated — you'll hear from
+        us within 1–2 business days.
+      </p>
+
+      <div class="thankyou-steps">
+        <div class="thankyou-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">We review your submission</div>
+            <div class="step-text">
+              Our team checks that your business is independently owned and a
+              good fit for the directory.
+            </div>
+          </div>
+        </div>
+        <div class="thankyou-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">You receive a payment link</div>
+            <div class="step-text">
+              Once approved, we'll send a secure link to complete your plan
+              setup. No charge until then.
+            </div>
+          </div>
+        </div>
+        <div class="thankyou-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Your listing goes live</div>
+            <div class="step-text">
+              After payment you'll get access to your business portal to
+              complete your profile.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="thankyou-actions">
+        <a href="/explore" class="btn-gold">Explore the Directory →</a>
+        <a href="/" class="btn-outline-dark">Back to Home</a>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  .thankyou-wrap {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .thankyou-card {
+    background: white;
+    border-radius: 16px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 3rem 2.5rem;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .thankyou-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .thankyou-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .thankyou-sub {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .thankyou-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    text-align: left;
+    margin-bottom: 2.5rem;
+  }
+
+  .thankyou-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .step-num {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .step-title {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+    margin-bottom: 0.25rem;
+  }
+
+  .step-text {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.6;
+  }
+
+  .thankyou-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>

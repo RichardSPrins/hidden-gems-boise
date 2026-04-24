@@ -1,0 +1,265 @@
+---
+// src/layouts/BlogLayout.astro
+// Blog article pages — extends PublicLayout with article-specific meta
+
+import PublicLayout from "./PublicLayout.astro";
+import type { Props as BaseProps } from "./BaseLayout.astro";
+
+export interface Props extends BaseProps {
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  authors?: string[];
+  tags?: string[];
+  readingTime?: number; // minutes
+  coverImage?: string;
+  coverImageAlt?: string;
+}
+
+const {
+  title,
+  description,
+  publishedTime,
+  modifiedTime,
+  authors = [],
+  tags = [],
+  readingTime,
+  coverImage,
+  coverImageAlt,
+  ...rest
+} = Astro.props;
+
+const formattedDate = publishedTime
+  ? new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(publishedTime)
+  : null;
+
+const formattedModified = modifiedTime
+  ? new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(modifiedTime)
+  : null;
+---
+
+<PublicLayout
+  title={title}
+  description={description}
+  image={coverImage}
+  imageAlt={coverImageAlt}
+  article={{
+    publishedTime,
+    modifiedTime,
+    authors,
+    tags,
+  }}
+  {...rest}
+>
+  <slot name="head" slot="head" />
+
+  <div class="blog-layout pt-24">
+    <!-- Article header -->
+    <header class="max-w-3xl mx-auto px-6 pt-12 pb-8">
+      {
+        tags.length > 0 && (
+          <div class="flex flex-wrap gap-2 mb-4">
+            {tags.map((tag) => (
+              <a
+                href={`/blog?tag=${tag}`}
+                class="text-xs font-semibold tracking-widest uppercase text-gem-gold hover:text-gem-gold-light transition-colors no-underline"
+              >
+                {tag}
+              </a>
+            ))}
+          </div>
+        )
+      }
+
+      <h1
+        class="font-display text-4xl md:text-5xl font-semibold leading-tight text-gem-text mb-4"
+      >
+        {title}
+      </h1>
+
+      {
+        description && (
+          <p class="text-lg text-gem-text-muted leading-relaxed mb-6">
+            {description}
+          </p>
+        )
+      }
+
+      <div
+        class="flex flex-wrap items-center gap-4 text-sm text-gem-text-subtle border-t border-gem-border pt-6"
+      >
+        {authors.length > 0 && <span>By {authors.join(", ")}</span>}
+        {
+          formattedDate && (
+            <time datetime={publishedTime?.toISOString()}>{formattedDate}</time>
+          )
+        }
+        {
+          formattedModified && modifiedTime !== publishedTime && (
+            <span class="text-gem-text-subtle">
+              Updated{" "}
+              <time datetime={modifiedTime?.toISOString()}>
+                {formattedModified}
+              </time>
+            </span>
+          )
+        }
+        {readingTime && <span>{readingTime} min read</span>}
+      </div>
+    </header>
+
+    <!-- Cover image -->
+    {
+      coverImage && (
+        <div class="max-w-4xl mx-auto px-6 mb-10">
+          <img
+            src={coverImage}
+            alt={coverImageAlt ?? title ?? ""}
+            class="w-full aspect-video object-cover rounded-xl"
+            loading="eager"
+          />
+        </div>
+      )
+    }
+
+    <!-- Article body -->
+    <article class="max-w-3xl mx-auto px-6 pb-20 prose prose-gem">
+      <slot />
+    </article>
+
+    <!-- Tags footer -->
+    {
+      tags.length > 0 && (
+        <div class="max-w-3xl mx-auto px-6 pb-16 border-t border-gem-border pt-8">
+          <p class="text-xs font-semibold tracking-widest uppercase text-gem-text-subtle mb-3">
+            Tags
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <a
+                href={`/blog?tag=${tag}`}
+                class="px-3 py-1 rounded-full bg-gem-mist-2 border border-gem-border text-sm text-gem-text-muted hover:border-gem-gold hover:text-gem-gold transition-colors no-underline"
+              >
+                {tag}
+              </a>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</PublicLayout>
+
+<style is:global>
+  /* Prose styles for blog content */
+  .prose-gem {
+    color: var(--gem-text);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  .prose-gem h2 {
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    font-weight: 600;
+    color: var(--gem-text);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .prose-gem h3 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--gem-text);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose-gem p {
+    margin-bottom: 1.5rem;
+  }
+
+  .prose-gem a {
+    color: var(--gem-gold);
+    text-decoration: underline;
+    text-decoration-color: rgba(201, 168, 76, 0.3);
+    transition: text-decoration-color 0.2s;
+  }
+
+  .prose-gem a:hover {
+    text-decoration-color: var(--gem-gold);
+  }
+
+  .prose-gem strong {
+    font-weight: 600;
+    color: var(--gem-text);
+  }
+
+  .prose-gem em {
+    font-style: italic;
+    color: var(--gem-gold);
+  }
+
+  .prose-gem ul,
+  .prose-gem ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .prose-gem li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose-gem blockquote {
+    border-left: 3px solid var(--gem-gold);
+    padding-left: 1.25rem;
+    margin: 2rem 0;
+    color: var(--gem-text-muted);
+    font-style: italic;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+  }
+
+  .prose-gem img {
+    width: 100%;
+    border-radius: 0.75rem;
+    margin: 2rem 0;
+  }
+
+  .prose-gem hr {
+    border: none;
+    border-top: 1px solid var(--gem-border);
+    margin: 2.5rem 0;
+  }
+
+  .prose-gem code {
+    background: var(--gem-mist-2);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+
+  .prose-gem pre {
+    background: var(--gem-dark);
+    color: white;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    overflow-x: auto;
+    margin: 2rem 0;
+  }
+
+  .prose-gem pre code {
+    background: transparent;
+    padding: 0;
+    font-size: 0.875rem;
+  }
+</style>

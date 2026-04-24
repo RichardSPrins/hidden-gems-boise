@@ -1,0 +1,687 @@
+---
+// src/pages/events/index.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { GET } from "@/pages/api/web/events";
+
+const url = new URL(Astro.request.url);
+const q = url.searchParams.get("q") ?? "";
+const categoryFilter = url.searchParams.get("category") ?? "";
+const dateRange = url.searchParams.get("date") ?? "upcoming";
+const neighborhood = url.searchParams.get("neighborhood") ?? "";
+const recurring = url.searchParams.get("recurring") ?? "";
+const sort = url.searchParams.get("sort") ?? "date";
+const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
+
+const response = await GET({ request: Astro.request } as any);
+const { results, neighborhoods, count, totalPages } = await response.json();
+
+const eventCategories = [
+  { value: "GRAND_OPENING", label: "Grand Opening", slug: "grand-opening" },
+  { value: "SALE_AND_PROMOTION", label: "Sale & Promotion", slug: "sale-and-promotion" },
+  { value: "WORKSHOP_AND_CLASS", label: "Workshop & Class", slug: "workshop-and-class" },
+  { value: "LIVE_MUSIC_AND_ENTERTAINMENT", label: "Live Music", slug: "live-music-and-entertainment" },
+  { value: "COMMUNITY_AND_NETWORKING", label: "Community", slug: "community-and-networking" },
+  { value: "FOOD_AND_DRINK_SPECIAL", label: "Food & Drink", slug: "food-and-drink-special" },
+  { value: "SEASONAL_AND_HOLIDAY", label: "Seasonal", slug: "seasonal-and-holiday" },
+  { value: "CHARITY_AND_FUNDRAISER", label: "Charity", slug: "charity-and-fundraiser" },
+  { value: "OTHER", label: "Other", slug: "other" },
+];
+
+const eventCategoryIcons: Record<string, string> = {
+  GRAND_OPENING: "🎊",
+  SALE_AND_PROMOTION: "🏷️",
+  WORKSHOP_AND_CLASS: "📝",
+  LIVE_MUSIC_AND_ENTERTAINMENT: "🎵",
+  COMMUNITY_AND_NETWORKING: "🤝",
+  FOOD_AND_DRINK_SPECIAL: "🍽️",
+  SEASONAL_AND_HOLIDAY: "🌟",
+  CHARITY_AND_FUNDRAISER: "❤️",
+  OTHER: "📅",
+};
+
+function formatEventDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return {
+    month: new Intl.DateTimeFormat("en-US", { month: "short" }).format(date),
+    day: new Intl.DateTimeFormat("en-US", { day: "numeric" }).format(date),
+    weekday: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date),
+    time: new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date),
+  };
+}
+
+function buildUrl(overrides: Record<string, string | null>) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (categoryFilter) params.set("category", categoryFilter);
+  if (dateRange && dateRange !== "upcoming") params.set("date", dateRange);
+  if (neighborhood) params.set("neighborhood", neighborhood);
+  if (recurring) params.set("recurring", recurring);
+  params.set("sort", sort);
+  params.set("page", "1");
+  Object.entries(overrides).forEach(([k, v]) => {
+    params.delete(k);
+    if (v !== null) params.set(k, v);
+  });
+  const qs = params.toString();
+  return qs ? `/events?${qs}` : "/events";
+}
+
+const hasFilters = q || categoryFilter || (dateRange && dateRange !== "upcoming") || neighborhood || recurring;
+const activeCategoryLabel = eventCategories.find(c => c.value === categoryFilter)?.label;
+---
+
+<PublicLayout
+  title="Events in Boise"
+  description="Discover upcoming events, workshops, concerts, and community gatherings across the Treasure Valley."
+>
+  <!-- HERO -->
+  <div class="events-hero">
+    <div class="events-hero-bg"></div>
+    <div class="events-hero-overlay"></div>
+    <div class="events-hero-content section-container">
+      <p class="section-eyebrow" style="color: var(--color-gem-gold-light)">What's Happening</p>
+      <h1 class="events-hero-title">Boise <em>Events</em></h1>
+      <p class="events-hero-sub">
+        {Number(count).toLocaleString()} upcoming {Number(count) === 1 ? "event" : "events"} across the Treasure Valley
+      </p>
+    </div>
+  </div>
+
+  <!-- CATEGORY CAROUSEL -->
+  <div class="cat-carousel-bar">
+    <div class="cat-carousel-track">
+      <a href="/events" class:list={["cat-pill", !categoryFilter && "cat-pill-active"]}>
+        All Events
+      </a>
+      {eventCategories.map(cat => (
+        <a
+          href={`/events/category/${cat.slug}`}
+          class:list={["cat-pill", categoryFilter === cat.value && "cat-pill-active"]}
+        >
+          <span>{eventCategoryIcons[cat.value]}</span>
+          {cat.label}
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="events-layout section-container">
+
+    <!-- SIDEBAR -->
+    <aside class="events-sidebar">
+      <div class="sidebar-inner">
+
+        <form method="get" action="/events" class="sidebar-section">
+          <label class="sidebar-label">Search Events</label>
+          <div class="sidebar-search-row">
+            <input type="text" name="q" value={q} placeholder="Search events…" class="gem-input sidebar-search-input" />
+            <input type="hidden" name="sort" value={sort} />
+            <button type="submit" class="sidebar-search-btn">Go</button>
+          </div>
+        </form>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Category</p>
+          <ul class="sidebar-cat-list">
+            <li>
+              <a href="/events" class:list={["sidebar-cat-item", !categoryFilter && "sidebar-cat-active"]}>
+                All Events
+              </a>
+            </li>
+            {eventCategories.map(cat => (
+              <li>
+                <a
+                  href={`/events/category/${cat.slug}`}
+                  class:list={["sidebar-cat-item", categoryFilter === cat.value && "sidebar-cat-active"]}
+                >
+                  <span class="sidebar-cat-icon">{eventCategoryIcons[cat.value]}</span>
+                  {cat.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">When</p>
+          <ul class="sidebar-cat-list">
+            {[
+              { value: "upcoming", label: "All Upcoming" },
+              { value: "week", label: "This Week" },
+              { value: "month", label: "This Month" },
+            ].map(opt => (
+              <li>
+                <a
+                  href={buildUrl({ date: opt.value === "upcoming" ? null : opt.value })}
+                  class:list={[
+                    "sidebar-cat-item",
+                    (dateRange === opt.value || (!dateRange && opt.value === "upcoming")) && "sidebar-cat-active",
+                  ]}
+                >
+                  {opt.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Type</p>
+          <ul class="sidebar-cat-list">
+            <li>
+              <a href={buildUrl({ recurring: null })} class:list={["sidebar-cat-item", !recurring && "sidebar-cat-active"]}>
+                All Types
+              </a>
+            </li>
+            <li>
+              <a href={buildUrl({ recurring: "false" })} class:list={["sidebar-cat-item", recurring === "false" && "sidebar-cat-active"]}>
+                One-Time Events
+              </a>
+            </li>
+            <li>
+              <a href={buildUrl({ recurring: "true" })} class:list={["sidebar-cat-item", recurring === "true" && "sidebar-cat-active"]}>
+                Recurring Events
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        {neighborhoods.length > 0 && (
+          <>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">
+              <p class="sidebar-label">Neighborhood</p>
+              <ul class="sidebar-neighborhood-list">
+                <li>
+                  <a href={buildUrl({ neighborhood: null })} class:list={["sidebar-neighborhood-item", !neighborhood && "sidebar-neighborhood-active"]}>
+                    All Neighborhoods
+                  </a>
+                </li>
+                {neighborhoods.map((n: string) => (
+                  <li>
+                    <a href={buildUrl({ neighborhood: n })} class:list={["sidebar-neighborhood-item", neighborhood === n && "sidebar-neighborhood-active"]}>
+                      {n}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+
+        {hasFilters && (
+          <>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">
+              <a href="/events" class="sidebar-clear">✕ Clear all filters</a>
+            </div>
+          </>
+        )}
+      </div>
+    </aside>
+
+    <!-- RESULTS -->
+    <div class="events-results">
+
+      <div class="results-header">
+        <p class="results-count">
+          {Number(count).toLocaleString()} {Number(count) === 1 ? "event" : "events"}
+          {activeCategoryLabel && <span> · <strong>{activeCategoryLabel}</strong></span>}
+          {q && <span> for "<strong>{q}</strong>"</span>}
+        </p>
+        <div class="results-controls">
+          <button class="mobile-filter-btn" id="mobile-filter-btn" aria-label="Open filters">
+            ⚙ Filters {hasFilters && <span class="filter-dot"></span>}
+          </button>
+          <form method="get" action="/events">
+            <input type="hidden" name="q" value={q} />
+            <input type="hidden" name="date" value={dateRange} />
+            <input type="hidden" name="neighborhood" value={neighborhood} />
+            <input type="hidden" name="recurring" value={recurring} />
+            <select name="sort" class="sort-select" onchange="this.form.submit()">
+              <option value="date" selected={sort === "date"}>Soonest First</option>
+              <option value="latest" selected={sort === "latest"}>Latest First</option>
+            </select>
+          </form>
+        </div>
+      </div>
+
+      {hasFilters && (
+        <div class="filter-chips">
+          {q && <a href={buildUrl({ q: null })} class="filter-chip">"{q}" ✕</a>}
+          {activeCategoryLabel && <a href={buildUrl({ category: null })} class="filter-chip">{activeCategoryLabel} ✕</a>}
+          {dateRange && dateRange !== "upcoming" && (
+            <a href={buildUrl({ date: null })} class="filter-chip">
+              {dateRange === "week" ? "This Week" : "This Month"} ✕
+            </a>
+          )}
+          {neighborhood && <a href={buildUrl({ neighborhood: null })} class="filter-chip">{neighborhood} ✕</a>}
+          {recurring && (
+            <a href={buildUrl({ recurring: null })} class="filter-chip">
+              {recurring === "true" ? "Recurring" : "One-Time"} ✕
+            </a>
+          )}
+        </div>
+      )}
+
+      {results.length > 0 ? (
+        <ul class="event-list">
+          {results.map((evt: any) => {
+            const d = formatEventDate(evt.startDateTime);
+            const categoryLabel = eventCategories.find(c => c.value === evt.category)?.label ?? evt.category;
+            return (
+              <li class="event-card-item">
+                <!-- Date badge -->
+                <div class="event-date-badge">
+                  <span class="event-date-month">{d.month}</span>
+                  <span class="event-date-day">{d.day}</span>
+                  <span class="event-date-weekday">{d.weekday}</span>
+                </div>
+
+                <!-- Main content -->
+                <div class="event-card-content">
+                  <div class="event-card-top">
+                    <span class="event-cat-pill">
+                      {eventCategoryIcons[evt.category]} {categoryLabel}
+                    </span>
+                    {evt.isRecurring && (
+                      <span class="event-recurring-pill">↻ Recurring</span>
+                    )}
+                  </div>
+
+                  <h2 class="event-card-title">{evt.title}</h2>
+
+                  <div class="event-card-meta">
+                    <span>🕐 {d.time}</span>
+                    {evt.location?.neighborhood && (
+                      <span>📍 {evt.location.neighborhood}</span>
+                    )}
+                    <a href={`/listings/${evt.business.slug}`} class="event-card-biz-link">
+                      by {evt.business.name}
+                    </a>
+                  </div>
+
+                  {evt.description && (
+                    <p class="event-card-desc">
+                      {evt.description.length > 140
+                        ? evt.description.slice(0, 137) + "…"
+                        : evt.description}
+                    </p>
+                  )}
+                </div>
+
+                <!-- Actions -->
+                <div class="event-card-actions">
+                  {evt.ticketUrl && (
+                    <a
+                      href={evt.ticketUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="event-ticket-link"
+                    >
+                      Tickets →
+                    </a>
+                  )}
+                  <a href={`/events/${evt.id}`} class="event-view-link">
+                    View →
+                  </a>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div class="no-results">
+          <p class="no-results-icon">📅</p>
+          <h3 class="no-results-title">No events found</h3>
+          <p class="no-results-sub">Try adjusting your filters or check back soon.</p>
+          <a href="/events" class="btn-gold">Clear Filters</a>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div class="events-pagination">
+          {page > 1 && (
+            <a href={buildUrl({ page: String(page - 1) })} class="page-btn">← Previous</a>
+          )}
+          <div class="page-numbers">
+            {Array.from({ length: totalPages }, (_: any, i: number) => i + 1).map((p: number) => (
+              <a
+                href={buildUrl({ page: String(p) })}
+                class:list={["page-num", p === page && "page-num-active"]}
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+          {page < totalPages && (
+            <a href={buildUrl({ page: String(page + 1) })} class="page-btn">Next →</a>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Mobile drawer -->
+  <div class="mobile-drawer-overlay hidden" id="drawer-overlay"></div>
+  <div class="mobile-drawer hidden" id="mobile-drawer" aria-hidden="true">
+    <div class="mobile-drawer-header">
+      <h2 class="mobile-drawer-title">Filters</h2>
+      <button class="mobile-drawer-close" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+    <div class="mobile-drawer-body">
+      <form method="get" action="/events" class="sidebar-section">
+        <label class="sidebar-label">Search</label>
+        <div class="sidebar-search-row">
+          <input type="text" name="q" value={q} placeholder="Search events…" class="gem-input" />
+          <button type="submit" class="sidebar-search-btn">Go</button>
+        </div>
+      </form>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <p class="sidebar-label">Category</p>
+        <ul class="sidebar-cat-list">
+          <li>
+            <a href="/events" class:list={["sidebar-cat-item", !categoryFilter && "sidebar-cat-active"]}>
+              All Events
+            </a>
+          </li>
+          {eventCategories.map(cat => (
+            <li>
+              <a
+                href={`/events/category/${cat.slug}`}
+                class:list={["sidebar-cat-item", categoryFilter === cat.value && "sidebar-cat-active"]}
+              >
+                <span class="sidebar-cat-icon">{eventCategoryIcons[cat.value]}</span>
+                {cat.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <p class="sidebar-label">When</p>
+        <ul class="sidebar-cat-list">
+          {[
+            { value: "upcoming", label: "All Upcoming" },
+            { value: "week", label: "This Week" },
+            { value: "month", label: "This Month" },
+          ].map(opt => (
+            <li>
+              <a
+                href={buildUrl({ date: opt.value === "upcoming" ? null : opt.value })}
+                class:list={["sidebar-cat-item", (dateRange === opt.value || (!dateRange && opt.value === "upcoming")) && "sidebar-cat-active"]}
+              >
+                {opt.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {hasFilters && (
+        <>
+          <div class="sidebar-divider"></div>
+          <div class="sidebar-section">
+            <a href="/events" class="sidebar-clear">✕ Clear all filters</a>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  /* HERO */
+  .events-hero { position: relative; height: 280px; display: flex; align-items: flex-end; overflow: hidden; padding-top: 4rem; }
+  .events-hero-bg { position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1600&auto=format&fit=crop&q=80'); background-size: cover; background-position: center 40%; }
+  .events-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(13,13,13,0.4) 0%, rgba(13,13,13,0.8) 100%); }
+  .events-hero-content { position: relative; z-index: 2; padding-bottom: 2.5rem; width: 100%; }
+  .events-hero-title { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 600; color: white; line-height: 1.1; margin-bottom: 0.5rem; }
+  .events-hero-title em { font-style: italic; color: var(--color-gem-gold-light); }
+  .events-hero-sub { color: rgba(255,255,255,0.65); font-size: 0.9375rem; }
+
+  /* CAROUSEL */
+  .cat-carousel-bar { background: white; border-bottom: 1px solid var(--color-gem-border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 64px; z-index: 40; }
+  .cat-carousel-bar::-webkit-scrollbar { display: none; }
+  .cat-carousel-track { display: flex; gap: 0.375rem; padding: 0.75rem 2rem; width: max-content; min-width: 100%; }
+  .cat-pill { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.8125rem; font-weight: 500; text-decoration: none; white-space: nowrap; border: 1.5px solid var(--color-gem-border); color: var(--color-gem-text-muted); background: white; transition: all 0.15s; }
+  .cat-pill:hover { border-color: var(--color-gem-gold); color: var(--color-gem-gold); }
+  .cat-pill-active { background: var(--color-gem-gold); border-color: var(--color-gem-gold); color: var(--color-gem-dark); font-weight: 600; }
+
+  /* LAYOUT */
+  .events-layout { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; padding-top: 2rem; padding-bottom: 4rem; align-items: start; }
+  @media (max-width: 1024px) { .events-layout { grid-template-columns: 1fr; } .events-sidebar { display: none; } }
+  .events-sidebar { position: sticky; top: 120px; }
+
+  /* SIDEBAR */
+  .sidebar-inner { background: white; border-radius: 12px; border: 1.5px solid var(--color-gem-border); overflow: hidden; }
+  .sidebar-section { padding: 1.25rem; }
+  .sidebar-label { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-gem-text-subtle); margin-bottom: 0.75rem; }
+  .sidebar-divider { height: 1px; background: var(--color-gem-border); }
+  .sidebar-search-row { display: flex; gap: 0.5rem; }
+  .sidebar-search-input { flex: 1; font-size: 0.875rem; padding: 0.625rem 0.875rem; }
+  .sidebar-search-btn { padding: 0.625rem 0.875rem; background: var(--color-gem-gold); color: var(--color-gem-dark); border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .sidebar-search-btn:hover { background: var(--color-gem-gold-light); }
+  .sidebar-cat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.125rem; }
+  .sidebar-cat-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--color-gem-text-muted); text-decoration: none; transition: all 0.15s; }
+  .sidebar-cat-item:hover { background: var(--color-gem-mist); color: var(--color-gem-text); }
+  .sidebar-cat-active { background: rgba(201,168,76,0.08); color: var(--color-gem-gold); font-weight: 600; }
+  .sidebar-cat-icon { font-size: 1rem; }
+  .sidebar-neighborhood-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.125rem; max-height: 200px; overflow-y: auto; }
+  .sidebar-neighborhood-item { display: block; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; color: var(--color-gem-text-muted); text-decoration: none; transition: all 0.15s; }
+  .sidebar-neighborhood-item:hover { background: var(--color-gem-mist); color: var(--color-gem-text); }
+  .sidebar-neighborhood-active { color: var(--color-gem-gold); font-weight: 600; }
+  .sidebar-clear { display: block; font-size: 0.8125rem; color: var(--color-gem-text-subtle); text-decoration: none; }
+  .sidebar-clear:hover { color: var(--color-gem-text); }
+
+  /* RESULTS HEADER */
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; }
+  .results-count { font-size: 0.9375rem; color: var(--color-gem-text-muted); }
+  .results-count strong { color: var(--color-gem-text); }
+  .results-controls { display: flex; align-items: center; gap: 0.75rem; }
+  .sort-select { padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-gem-border); border-radius: 8px; font-family: var(--font-body); font-size: 0.875rem; color: var(--color-gem-text); background: white; outline: none; cursor: pointer; }
+  .mobile-filter-btn { display: none; align-items: center; gap: 0.375rem; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-gem-border); border-radius: 8px; background: white; font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; color: var(--color-gem-text); cursor: pointer; }
+  @media (max-width: 1024px) { .mobile-filter-btn { display: flex; } }
+  .filter-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gem-gold); display: inline-block; margin-left: 0.25rem; }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+  .filter-chip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.3rem 0.75rem; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25); border-radius: 100px; font-size: 0.8rem; color: var(--color-gem-gold); text-decoration: none; font-weight: 500; }
+
+  /* EVENT CARDS — li is the card, no wrapping anchor */
+  .event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+
+  .event-card-item {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.25rem;
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 1.25rem;
+    align-items: start;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .event-card-item:hover {
+    border-color: var(--color-gem-gold);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+  }
+
+  @media (max-width: 640px) {
+    .event-card-item {
+      grid-template-columns: 56px 1fr;
+    }
+    .event-card-actions {
+      grid-column: 2;
+    }
+  }
+
+  /* Date badge */
+  .event-date-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-gem-gold);
+    border-radius: 8px;
+    padding: 0.5rem 0.375rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .event-date-month { display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-gem-dark); }
+  .event-date-day { display: block; font-family: var(--font-display); font-size: 1.625rem; font-weight: 600; color: var(--color-gem-dark); line-height: 1; }
+  .event-date-weekday { display: block; font-size: 0.6rem; font-weight: 600; color: rgba(13,13,13,0.55); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Card content */
+  .event-card-content { display: flex; flex-direction: column; gap: 0.375rem; min-width: 0; }
+
+  .event-card-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+  .event-cat-pill {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+  }
+
+  .event-recurring-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    background: rgba(201,168,76,0.08);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 100px;
+    color: var(--color-gem-gold);
+  }
+
+  .event-card-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .event-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+  }
+
+  .event-card-biz-link {
+    font-size: 0.8rem;
+    color: var(--color-gem-gold);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .event-card-biz-link:hover { text-decoration: underline; }
+
+  .event-card-desc {
+    font-size: 0.85rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.6;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Actions */
+  .event-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .event-ticket-link {
+    padding: 0.375rem 0.875rem;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .event-ticket-link:hover { background: var(--color-gem-gold-light); }
+
+  .event-view-link {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-gem-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+
+  .event-view-link:hover { color: var(--color-gem-gold); }
+
+  /* NO RESULTS */
+  .no-results { text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; border: 1.5px solid var(--color-gem-border); }
+  .no-results-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .no-results-title { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .no-results-sub { color: var(--color-gem-text-muted); margin-bottom: 1.5rem; }
+
+  /* PAGINATION */
+  .events-pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-gem-border); }
+  .page-btn { padding: 0.5rem 1rem; border: 1.5px solid var(--color-gem-border); border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--color-gem-text-muted); text-decoration: none; transition: all 0.15s; }
+  .page-btn:hover { border-color: var(--color-gem-gold); color: var(--color-gem-gold); }
+  .page-numbers { display: flex; gap: 0.25rem; }
+  .page-num { width: 2.25rem; height: 2.25rem; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.875rem; font-weight: 500; text-decoration: none; color: var(--color-gem-text-muted); border: 1.5px solid transparent; transition: all 0.15s; }
+  .page-num:hover { border-color: var(--color-gem-border); color: var(--color-gem-text); }
+  .page-num-active { background: var(--color-gem-gold); color: var(--color-gem-dark); font-weight: 700; }
+
+  /* MOBILE DRAWER */
+  .mobile-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 80; }
+  .mobile-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(320px, 85vw); background: white; z-index: 90; overflow-y: auto; transform: translateX(-100%); transition: transform 0.3s ease; }
+  .mobile-drawer.drawer-open { transform: translateX(0); }
+  .mobile-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; border-bottom: 1px solid var(--color-gem-border); position: sticky; top: 0; background: white; z-index: 1; }
+  .mobile-drawer-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin: 0; }
+  .mobile-drawer-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--color-gem-text-muted); padding: 0.25rem; line-height: 1; }
+</style>
+
+<script>
+  const filterBtn = document.getElementById("mobile-filter-btn");
+  const drawer = document.getElementById("mobile-drawer");
+  const overlay = document.getElementById("drawer-overlay");
+  const closeBtn = document.getElementById("drawer-close");
+
+  function openDrawer() {
+    drawer?.classList.remove("hidden");
+    overlay?.classList.remove("hidden");
+    setTimeout(() => drawer?.classList.add("drawer-open"), 10);
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    drawer?.classList.remove("drawer-open");
+    document.body.style.overflow = "";
+    setTimeout(() => {
+      drawer?.classList.add("hidden");
+      overlay?.classList.add("hidden");
+    }, 300);
+  }
+
+  filterBtn?.addEventListener("click", openDrawer);
+  closeBtn?.addEventListener("click", closeDrawer);
+  overlay?.addEventListener("click", closeDrawer);
+</script>

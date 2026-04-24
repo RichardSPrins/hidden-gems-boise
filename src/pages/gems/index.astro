@@ -1,0 +1,236 @@
+---
+// src/pages/gems/index.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { db } from "@/lib/db";
+import { gemSpotlight, business, image } from "@/lib/db/schema";
+import { eq, desc, isNotNull } from "drizzle-orm";
+
+const spotlights = await db.query.gemSpotlight.findMany({
+  where: isNotNull(gemSpotlight.publishedAt),
+  orderBy: desc(gemSpotlight.publishedAt),
+  with: {
+    business: {
+      with: {
+        category: true,
+        images: { where: eq(image.isPrimary, true), limit: 1 },
+      },
+    },
+  },
+});
+
+function formatWeek(dateStr: string | Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(dateStr));
+}
+---
+
+<PublicLayout
+  title="Gem of the Week — Hidden Gems Boise"
+  description="Every week we spotlight one standout independently owned business in the Treasure Valley. Meet the gems."
+>
+  <!-- HERO -->
+  <div class="gems-hero">
+    <div class="gems-hero-bg"></div>
+    <div class="gems-hero-overlay"></div>
+    <div class="gems-hero-content section-container">
+      <p class="section-eyebrow" style="color: var(--color-gem-gold-light)">Weekly Spotlight</p>
+      <h1 class="gems-hero-title">Gem of the <em>Week</em></h1>
+      <p class="gems-hero-sub">
+        Every week we shine a light on one standout independently owned business in the Treasure Valley.
+      </p>
+    </div>
+  </div>
+
+  <div class="gems-layout section-container">
+
+    {spotlights.length > 0 ? (
+      <>
+        <!-- LATEST GEM FEATURED -->
+        <a href={`/gems/${spotlights[0].id}`} class="gem-featured">
+          <div class="gem-featured-img">
+            {spotlights[0].business.images[0] ? (
+              <img
+                src={spotlights[0].business.images[0].url}
+                alt={spotlights[0].business.name}
+              />
+            ) : (
+              <div class="gem-featured-placeholder">💎</div>
+            )}
+            <div class="gem-featured-overlay">
+              <span class="gem-latest-badge">💎 Latest Gem</span>
+            </div>
+          </div>
+          <div class="gem-featured-body">
+            <span class="gem-week-label">{spotlights[0].weekLabel}</span>
+            <h2 class="gem-featured-headline">{spotlights[0].headline}</h2>
+            <div class="gem-featured-biz">
+              <span class="gem-biz-name">{spotlights[0].business.name}</span>
+              <span class="gem-biz-cat">{spotlights[0].business.category?.name}</span>
+            </div>
+            <p class="gem-featured-writeup">
+              {spotlights[0].writeup.length > 200
+                ? spotlights[0].writeup.slice(0, 197) + "…"
+                : spotlights[0].writeup}
+            </p>
+            <span class="gem-read-more">Read the full feature →</span>
+          </div>
+        </a>
+
+        <!-- ARCHIVE GRID -->
+        {spotlights.length > 1 && (
+          <div class="gems-archive">
+            <h2 class="gems-archive-title">Past Gems</h2>
+            <div class="gems-grid">
+              {spotlights.slice(1).map(spotlight => (
+                <a href={`/gems/${spotlight.id}`} class="gem-card">
+                  <div class="gem-card-img">
+                    {spotlight.business.images[0] ? (
+                      <img
+                        src={spotlight.business.images[0].url}
+                        alt={spotlight.business.name}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="gem-card-placeholder">💎</div>
+                    )}
+                  </div>
+                  <div class="gem-card-body">
+                    <span class="gem-week-label">{spotlight.weekLabel}</span>
+                    <h3 class="gem-card-headline">{spotlight.headline}</h3>
+                    <div class="gem-card-biz">
+                      <span class="gem-biz-name">{spotlight.business.name}</span>
+                      {spotlight.business.category && (
+                        <span class="gem-biz-cat">· {spotlight.business.category.name}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    ) : (
+      <div class="gems-empty">
+        <p class="gems-empty-icon">💎</p>
+        <h2 class="gems-empty-title">Coming Soon</h2>
+        <p class="gems-empty-sub">
+          We're curating our first Gem of the Week spotlight. Check back soon to see Boise's finest featured here.
+        </p>
+        <a href="/explore" class="btn-gold">Explore the Directory →</a>
+      </div>
+    )}
+  </div>
+</PublicLayout>
+
+<style>
+  .gems-hero { position: relative; height: 280px; display: flex; align-items: flex-end; overflow: hidden; padding-top: 4rem; }
+  .gems-hero-bg { position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=1600&auto=format&fit=crop&q=80'); background-size: cover; background-position: center 40%; }
+  .gems-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(13,13,13,0.3) 0%, rgba(13,13,13,0.8) 100%); }
+  .gems-hero-content { position: relative; z-index: 2; padding-bottom: 2.5rem; width: 100%; }
+  .gems-hero-title { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 600; color: white; line-height: 1.1; margin-bottom: 0.5rem; }
+  .gems-hero-title em { font-style: italic; color: var(--color-gem-gold-light); }
+  .gems-hero-sub { color: rgba(255,255,255,0.65); font-size: 0.9375rem; max-width: 520px; }
+
+  .gems-layout { padding-top: 2.5rem; padding-bottom: 4rem; display: flex; flex-direction: column; gap: 3rem; }
+
+  /* FEATURED */
+  .gem-featured {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1.5px solid var(--color-gem-border);
+    text-decoration: none;
+    color: inherit;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .gem-featured:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.1); transform: translateY(-2px); }
+
+  @media (max-width: 768px) { .gem-featured { grid-template-columns: 1fr; } }
+
+  .gem-featured-img { position: relative; aspect-ratio: 4/3; overflow: hidden; background: var(--color-gem-dark); }
+  .gem-featured-img img { width: 100%; height: 100%; object-fit: cover; }
+  .gem-featured-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 5rem; }
+
+  .gem-featured-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(13,13,13,0.5) 0%, transparent 50%);
+    display: flex;
+    align-items: flex-end;
+    padding: 1.25rem;
+  }
+
+  .gem-latest-badge {
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.875rem;
+    border-radius: 100px;
+  }
+
+  .gem-featured-body { padding: 2rem; display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; }
+
+  .gem-week-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+  }
+
+  .gem-featured-headline { font-family: var(--font-display); font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; margin: 0; }
+
+  .gem-featured-biz { display: flex; align-items: center; gap: 0.5rem; }
+  .gem-biz-name { font-weight: 600; font-size: 0.9375rem; }
+  .gem-biz-cat { font-size: 0.8125rem; color: var(--color-gem-text-muted); }
+
+  .gem-featured-writeup { font-size: 0.9375rem; color: var(--color-gem-text-muted); line-height: 1.7; }
+  .gem-read-more { font-size: 0.875rem; font-weight: 600; color: var(--color-gem-gold); }
+
+  /* ARCHIVE */
+  .gems-archive-title { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; margin-bottom: 1.25rem; }
+
+  .gems-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 1024px) { .gems-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .gems-grid { grid-template-columns: 1fr; } }
+
+  .gem-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+  }
+
+  .gem-card:hover { border-color: var(--color-gem-gold); box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+  .gem-card-img { aspect-ratio: 16/9; overflow: hidden; background: var(--color-gem-mist-2); }
+  .gem-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .gem-card:hover .gem-card-img img { transform: scale(1.03); }
+  .gem-card-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+
+  .gem-card-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; }
+  .gem-card-headline { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; line-height: 1.3; margin: 0; }
+  .gem-card-biz { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8rem; color: var(--color-gem-text-muted); }
+
+  /* EMPTY */
+  .gems-empty { text-align: center; padding: 5rem 2rem; }
+  .gems-empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+  .gems-empty-title { font-family: var(--font-display); font-size: 2rem; font-weight: 600; margin-bottom: 0.75rem; }
+  .gems-empty-sub { color: var(--color-gem-text-muted); font-size: 0.9375rem; line-height: 1.7; max-width: 440px; margin: 0 auto 1.5rem; }
+</style>

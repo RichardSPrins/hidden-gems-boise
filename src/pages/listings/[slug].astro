@@ -1,0 +1,1633 @@
+---
+// src/pages/listings/[slug].astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { GET } from "@/pages/api/web/listings";
+
+const { slug } = Astro.params;
+
+const apiUrl = new URL(Astro.request.url);
+apiUrl.searchParams.set("slug", slug ?? "");
+
+const response = await GET({ request: new Request(apiUrl.toString()) } as any);
+const data = await response.json();
+
+if (data.notFound) {
+  return Astro.redirect("/explore");
+}
+
+const { biz, reviews, upcomingEvents, related } = data;
+
+// Helpers
+const priceMap: Record<string, string> = {
+  ONE: "$",
+  TWO: "$$",
+  THREE: "$$$",
+  FOUR: "$$$$",
+};
+
+const categoryIcons: Record<string, string> = {
+  "Food & Drink": "🍽️",
+  "Health & Wellness": "💆",
+  Shopping: "🛍️",
+  "Home Services": "🔧",
+  "Arts & Entertainment": "🎭",
+  "Professional Services": "💼",
+  Education: "📚",
+  Automotive: "🚗",
+};
+
+const socialIcons: Record<string, string> = {
+  INSTAGRAM: "📸",
+  FACEBOOK: "👥",
+  TIKTOK: "🎵",
+  TWITTER: "🐦",
+  YOUTUBE: "▶️",
+  LINKEDIN: "💼",
+  YELP: "⭐",
+  TRIPADVISOR: "✈️",
+  OTHER: "🔗",
+};
+
+const days = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const today = new Date().getDay();
+
+function formatTime(time: string | null) {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function getTodayHours(hours: any[]) {
+  const todayHours = hours?.find((h: any) => h.dayOfWeek === today);
+  if (!todayHours) return "Hours not listed";
+  if (todayHours.isClosed) return "Closed today";
+  return `Open today: ${formatTime(todayHours.openTime)} – ${formatTime(todayHours.closeTime)}`;
+}
+
+function renderStars(rating: number) {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  const empty = 5 - full - (half ? 1 : 0);
+  return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
+}
+
+function formatEventDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatReviewDate(dateStr: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(dateStr));
+}
+
+const primaryLocation =
+  biz.locations?.find((l: any) => l.isPrimary) ?? biz.locations?.[0];
+const primaryImage =
+  biz.images?.find((i: any) => i.isPrimary) ?? biz.images?.[0];
+const otherImages = biz.images?.filter((i: any) => !i.isPrimary) ?? [];
+const todayHoursText = primaryLocation
+  ? getTodayHours(primaryLocation.hours)
+  : "Hours not listed";
+const hasBooking = biz.bookingUrl;
+const hasWebsite = biz.websiteUrl;
+const googleMapsUrl = primaryLocation
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${primaryLocation.address}, ${primaryLocation.city}, ${primaryLocation.state}`)}`
+  : null;
+---
+
+<PublicLayout
+  title={biz.name}
+  description={biz.bio ?? `${biz.name} — ${biz.category.name} in Boise, ID`}
+  image={primaryImage?.url}
+>
+  <!-- HERO -->
+  <div class="listing-hero">
+    <div
+      class="listing-hero-bg"
+      style={primaryImage ? `background-image: url('${primaryImage.url}')` : ""}
+    >
+    </div>
+    <div class="listing-hero-overlay"></div>
+    <div class="listing-hero-content section-container">
+      <!-- Breadcrumb -->
+      <nav class="hero-breadcrumb" aria-label="Breadcrumb">
+        <a href="/explore">Explore</a>
+        <span>›</span>
+        <a href={`/explore/${biz.category.slug}`}>{biz.category.name}</a>
+        <span>›</span>
+        <span>{biz.name}</span>
+      </nav>
+
+      <div class="listing-hero-body">
+        <div>
+          <!-- Badges -->
+          <div class="listing-hero-badges">
+            {
+              biz.isGemOfWeek && (
+                <span class="gem-badge">💎 Gem of the Week</span>
+              )
+            }
+            {biz.isVerified && <span class="verified-badge">✓ Verified</span>}
+          </div>
+
+          <h1 class="listing-hero-title">{biz.name}</h1>
+
+          <div class="listing-hero-meta">
+            <span class="biz-card-cat">{biz.category.name}</span>
+            {biz.subcategory && <span class="listing-meta-sep">·</span>}
+            {
+              biz.subcategory && (
+                <span class="listing-hero-subcat">{biz.subcategory.name}</span>
+              )
+            }
+            {biz.pricePoint && <span class="listing-meta-sep">·</span>}
+            {
+              biz.pricePoint && (
+                <span class="listing-hero-price">
+                  {priceMap[biz.pricePoint]}
+                </span>
+              )
+            }
+          </div>
+
+          {
+            biz.reviewCount > 0 && (
+              <div class="listing-hero-rating">
+                <span class="listing-stars">
+                  {renderStars(biz.averageRating)}
+                </span>
+                <span class="listing-rating-num">
+                  {biz.averageRating.toFixed(1)}
+                </span>
+                <a href="#reviews" class="listing-rating-count">
+                  ({biz.reviewCount}{" "}
+                  {biz.reviewCount === 1 ? "review" : "reviews"})
+                </a>
+              </div>
+            )
+          }
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="listing-hero-ctas">
+          {
+            hasBooking && (
+              <a
+                href={biz.bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-gold"
+              >
+                Book Now →
+              </a>
+            )
+          }
+          {
+            hasWebsite && (
+              <a
+                href={biz.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-outline-white"
+              >
+                Visit Website
+              </a>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK INFO BAR -->
+  <div class="info-bar">
+    <div class="section-container">
+      <div class="info-bar-inner">
+        {
+          primaryLocation && (
+            <div class="info-bar-item">
+              <span class="info-bar-icon">📍</span>
+              <span>
+                {primaryLocation.neighborhood ?? primaryLocation.city},{" "}
+                {primaryLocation.state}
+              </span>
+            </div>
+          )
+        }
+        {
+          primaryLocation?.hours && (
+            <div class="info-bar-item">
+              <span class="info-bar-icon">🕐</span>
+              <span>{todayHoursText}</span>
+            </div>
+          )
+        }
+        {
+          biz.contact?.phone && (
+            <a
+              href={`tel:${biz.contact.phone}`}
+              class="info-bar-item info-bar-link"
+            >
+              <span class="info-bar-icon">📞</span>
+              <span>{biz.contact.phone}</span>
+            </a>
+          )
+        }
+        {
+          biz.contact?.email && (
+            <a
+              href={`mailto:${biz.contact.email}`}
+              class="info-bar-item info-bar-link"
+            >
+              <span class="info-bar-icon">✉️</span>
+              <span>{biz.contact.email}</span>
+            </a>
+          )
+        }
+        {
+          googleMapsUrl && (
+            <a
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="info-bar-item info-bar-link"
+            >
+              <span class="info-bar-icon">🗺️</span>
+              <span>Get Directions</span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="listing-layout section-container">
+    <!-- LEFT COLUMN -->
+    <div class="listing-main">
+      <!-- About -->
+      {
+        biz.bio && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">About {biz.name}</h2>
+            <p class="listing-bio">{biz.bio}</p>
+            {biz.keywords?.length > 0 && (
+              <div class="listing-tags">
+                {biz.keywords.map((kw: string) => (
+                  <span class="listing-tag">{kw}</span>
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      }
+
+      <!-- Photo Gallery -->
+      {
+        otherImages.length > 0 && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Photos</h2>
+            <div class="photo-gallery">
+              {otherImages.slice(0, 6).map((img: any) => (
+                <div class="photo-item">
+                  <img src={img.url} alt={img.alt ?? biz.name} loading="lazy" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Amenities -->
+      {
+        biz.amenities?.length > 0 && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Amenities</h2>
+            <div class="amenities-grid">
+              {biz.amenities.map((ba: any) => (
+                <div class="amenity-item">
+                  <span class="amenity-check">✓</span>
+                  <span>{ba.amenity.label}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Features -->
+      {
+        biz.features?.length > 0 && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Features</h2>
+            <div class="features-list">
+              {biz.features.map((bf: any) => (
+                <span class="feature-badge">{bf.feature.label}</span>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- FAQs -->
+      {
+        biz.faqs?.length > 0 && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Frequently Asked Questions</h2>
+            <div class="faq-list">
+              {biz.faqs.map((f: any, i: number) => (
+                <div class="faq-item" id={`faq-${i}`}>
+                  <button class="faq-trigger" aria-expanded="false">
+                    {f.question}
+                    <span class="faq-icon">+</span>
+                  </button>
+                  <div class="faq-body">{f.answer}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Upcoming Events -->
+      {
+        upcomingEvents?.length > 0 && (
+          <section class="listing-section">
+            <h2 class="listing-section-title">Upcoming Events</h2>
+            <div class="events-list">
+              {upcomingEvents.map((evt: any) => (
+                <a href={`/events/${evt.id}`} class="event-list-item">
+                  <div class="event-list-date">
+                    {formatEventDate(evt.startDateTime)}
+                  </div>
+                  <div class="event-list-body">
+                    <div class="event-list-title">{evt.title}</div>
+                    <div class="event-list-cat">
+                      {evt.category.replace(/_/g, " ")}
+                    </div>
+                  </div>
+                  {evt.ticketUrl && (
+                    <span class="event-list-ticket">Tickets →</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Reviews -->
+      <section class="listing-section" id="reviews">
+        <div class="reviews-header">
+          <h2 class="listing-section-title">
+            Reviews
+            {
+              reviews.length > 0 && (
+                <span class="reviews-count">({reviews.length})</span>
+              )
+            }
+          </h2>
+          {
+            biz.reviewCount > 0 && (
+              <div class="reviews-summary">
+                <span class="reviews-avg-stars">
+                  {renderStars(biz.averageRating)}
+                </span>
+                <span class="reviews-avg-num">
+                  {biz.averageRating.toFixed(1)}
+                </span>
+                <span class="reviews-avg-label">out of 5</span>
+              </div>
+            )
+          }
+        </div>
+
+        {
+          reviews.length > 0 ? (
+            <div class="reviews-list">
+              {reviews.map((r: any) => (
+                <div class="review-item">
+                  <div class="review-header">
+                    <div class="review-author-wrap">
+                      <div class="review-avatar">
+                        {r.authorName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div class="review-author">{r.authorName}</div>
+                        <div class="review-date">
+                          {formatReviewDate(r.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="review-stars">{renderStars(r.rating)}</div>
+                  </div>
+                  {r.body && <p class="review-body">{r.body}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p class="no-reviews">No reviews yet. Be the first to leave one!</p>
+          )
+        }
+
+        <!-- Review form -->
+        <div class="review-form-wrap">
+          <h3 class="review-form-title">Leave a Review</h3>
+          <form
+            class="review-form"
+            id="review-form"
+            method="POST"
+            action="/api/reviews"
+          >
+            <input type="hidden" name="businessId" value={biz.id} />
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="gem-label" for="r-name">Your Name</label>
+                <input
+                  class="gem-input"
+                  id="r-name"
+                  name="authorName"
+                  type="text"
+                  placeholder="Jane Smith"
+                  required
+                />
+              </div>
+              <div class="form-field">
+                <label class="gem-label" for="r-email">Email</label>
+                <input
+                  class="gem-input"
+                  id="r-email"
+                  name="authorEmail"
+                  type="email"
+                  placeholder="jane@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="gem-label">Rating</label>
+              <div class="star-picker" role="group" aria-label="Rating">
+                {
+                  [1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      type="button"
+                      class="star-pick-btn"
+                      data-value={n}
+                      aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                    >
+                      ☆
+                    </button>
+                  ))
+                }
+              </div>
+              <input
+                type="hidden"
+                name="rating"
+                id="rating-input"
+                value=""
+                required
+              />
+            </div>
+
+            <div class="form-field">
+              <label class="gem-label" for="r-body">Your Review</label>
+              <textarea
+                class="gem-textarea"
+                id="r-body"
+                name="body"
+                placeholder="Tell others about your experience…"></textarea>
+            </div>
+
+            <button type="submit" class="btn-gold">Submit Review →</button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="listing-sidebar">
+      <!-- CTA Card -->
+      {
+        (hasBooking || hasWebsite) && (
+          <div class="sidebar-card cta-card">
+            {hasBooking && (
+              <a
+                href={biz.bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-gold w-full text-center"
+              >
+                Book Now →
+              </a>
+            )}
+            {hasWebsite && (
+              <a
+                href={biz.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-outline-dark w-full text-center"
+              >
+                Visit Website
+              </a>
+            )}
+          </div>
+        )
+      }
+
+      <!-- Contact Card -->
+      {
+        (biz.contact?.phone || biz.contact?.email || primaryLocation) && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-card-title">Contact & Location</h3>
+            <div class="contact-list">
+              {primaryLocation && (
+                <div class="contact-item">
+                  <span class="contact-icon">📍</span>
+                  <div>
+                    <div>{primaryLocation.address}</div>
+                    <div>
+                      {primaryLocation.city}, {primaryLocation.state}{" "}
+                      {primaryLocation.zip}
+                    </div>
+                    {googleMapsUrl && (
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="contact-link"
+                      >
+                        Get Directions →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              {biz.contact?.phone && (
+                <div class="contact-item">
+                  <span class="contact-icon">📞</span>
+                  <a href={`tel:${biz.contact.phone}`} class="contact-link">
+                    {biz.contact.phone}
+                  </a>
+                </div>
+              )}
+              {biz.contact?.email && (
+                <div class="contact-item">
+                  <span class="contact-icon">✉️</span>
+                  <a href={`mailto:${biz.contact.email}`} class="contact-link">
+                    {biz.contact.email}
+                  </a>
+                </div>
+              )}
+              {biz.websiteUrl && (
+                <div class="contact-item">
+                  <span class="contact-icon">🌐</span>
+                  <a
+                    href={biz.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="contact-link"
+                  >
+                    {biz.websiteUrl
+                      .replace(/^https?:\/\//, "")
+                      .replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Hours Card -->
+      {
+        primaryLocation?.hours?.length > 0 && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-card-title">Hours</h3>
+            <div class="hours-list">
+              {days.map((day, i) => {
+                const h = primaryLocation.hours.find(
+                  (hr: any) => hr.dayOfWeek === i
+                );
+                const isToday = i === today;
+                return (
+                  <div class:list={["hours-row", isToday && "hours-today"]}>
+                    <span class="hours-day">{day}</span>
+                    <span class="hours-time">
+                      {!h || h.isClosed
+                        ? "Closed"
+                        : `${formatTime(h.openTime)} – ${formatTime(h.closeTime)}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Locations Card (multiple) -->
+      {
+        biz.locations?.length > 1 && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-card-title">Locations</h3>
+            <div class="locations-list">
+              {biz.locations.map((loc: any) => (
+                <div class="location-item">
+                  {loc.isPrimary && (
+                    <span class="location-primary-badge">Primary</span>
+                  )}
+                  <div class="location-address">
+                    {loc.address}
+                    <br />
+                    {loc.city}, {loc.state} {loc.zip}
+                  </div>
+                  {loc.neighborhood && (
+                    <div class="location-neighborhood">{loc.neighborhood}</div>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${loc.address}, ${loc.city}, ${loc.state}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="contact-link"
+                  >
+                    Get Directions →
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Socials Card -->
+      {
+        biz.socials?.length > 0 && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-card-title">Follow Along</h3>
+            <div class="socials-list">
+              {biz.socials.map((s: any) => (
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="social-item"
+                >
+                  <span>{socialIcons[s.platform] ?? "🔗"}</span>
+                  <span>
+                    {s.platform.charAt(0) + s.platform.slice(1).toLowerCase()}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Gem Spotlight Card -->
+      {
+        biz.spotlights?.length > 0 && (
+          <div class="sidebar-card spotlight-card">
+            <div class="spotlight-eyebrow">💎 Gem Spotlight</div>
+            <h3 class="spotlight-headline">{biz.spotlights[0].headline}</h3>
+            <p class="spotlight-week">{biz.spotlights[0].weekLabel}</p>
+            <a href="/gems" class="contact-link">
+              Read the full feature →
+            </a>
+          </div>
+        )
+      }
+    </aside>
+  </div>
+
+  <!-- RELATED BUSINESSES -->
+  {
+    related?.length > 0 && (
+      <section class="related-section">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-eyebrow">More in {biz.category.name}</span>
+            <h2 class="section-title">
+              You Might Also <em>Like</em>
+            </h2>
+          </div>
+          <div class="related-grid">
+            {related.map((r: any) => (
+              <a href={`/listings/${r.slug}`} class="biz-card">
+                <div class="biz-card-img">
+                  {r.images[0] ? (
+                    <img
+                      src={r.images[0].url}
+                      alt={r.images[0].alt ?? r.name}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span>{categoryIcons[r.category.name] ?? "📍"}</span>
+                  )}
+                </div>
+                <div class="biz-card-body">
+                  <div class="biz-card-meta">
+                    <span class="biz-card-cat">{r.category.name}</span>
+                    {r.pricePoint && (
+                      <span class="biz-card-price">
+                        {priceMap[r.pricePoint]}
+                      </span>
+                    )}
+                  </div>
+                  <div class="biz-card-name">{r.name}</div>
+                  {r.locations[0]?.neighborhood && (
+                    <div class="biz-card-location">
+                      {r.locations[0].neighborhood}, Boise
+                    </div>
+                  )}
+                  {r.reviewCount > 0 && (
+                    <div class="biz-card-rating">
+                      <span>{renderStars(r.averageRating)}</span>
+                      <span>({r.reviewCount})</span>
+                    </div>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</PublicLayout>
+
+<style>
+  /* ── HERO ── */
+  .listing-hero {
+    position: relative;
+    min-height: 420px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    padding-top: 4rem;
+  }
+
+  .listing-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--color-gem-dark-2);
+  }
+
+  .listing-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 13, 13, 0.2) 0%,
+      rgba(13, 13, 13, 0.85) 100%
+    );
+  }
+
+  .listing-hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: 2.5rem;
+    width: 100%;
+  }
+
+  .hero-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-breadcrumb a {
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .hero-breadcrumb a:hover {
+    color: var(--color-gem-gold);
+  }
+
+  .listing-hero-body {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .listing-hero-badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .listing-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .listing-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+
+  .listing-meta-sep {
+    color: rgba(255, 255, 255, 0.3);
+  }
+  .listing-hero-subcat {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .listing-hero-price {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+  }
+
+  .listing-hero-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .listing-stars {
+    color: var(--color-gem-gold);
+    font-size: 1rem;
+  }
+  .listing-rating-num {
+    color: white;
+    font-weight: 600;
+  }
+  .listing-rating-count {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .listing-rating-count:hover {
+    color: var(--color-gem-gold);
+  }
+
+  .listing-hero-ctas {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  /* ── INFO BAR ── */
+  .info-bar {
+    background: white;
+    border-bottom: 1px solid var(--color-gem-border);
+    position: sticky;
+    top: 64px;
+    z-index: 40;
+  }
+
+  .info-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.875rem 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .info-bar-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .info-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+
+  .info-bar-link:hover {
+    color: var(--color-gem-gold);
+  }
+  .info-bar-icon {
+    font-size: 1rem;
+  }
+
+  /* ── LAYOUT ── */
+  .listing-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    align-items: start;
+  }
+
+  @media (max-width: 1024px) {
+    .listing-layout {
+      grid-template-columns: 1fr;
+    }
+    .listing-sidebar {
+      order: -1;
+    }
+  }
+
+  /* ── SECTIONS ── */
+  .listing-section {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .listing-section-title {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .reviews-count {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-gem-text-muted);
+  }
+
+  .listing-bio {
+    font-size: 0.9375rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+
+  .listing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .listing-tag {
+    padding: 0.25rem 0.75rem;
+    background: var(--color-gem-mist);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+    border: 1px solid var(--color-gem-border);
+  }
+
+  /* ── PHOTOS ── */
+  .photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 640px) {
+    .photo-gallery {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .photo-item {
+    aspect-ratio: 4/3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-gem-mist-2);
+  }
+
+  .photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ── AMENITIES ── */
+  .amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.625rem;
+  }
+
+  .amenity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+  }
+
+  .amenity-check {
+    color: var(--color-gem-gold);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── FEATURES ── */
+  .features-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .feature-badge {
+    padding: 0.3rem 0.875rem;
+    background: rgba(201, 168, 76, 0.08);
+    border: 1px solid rgba(201, 168, 76, 0.25);
+    border-radius: 100px;
+    font-size: 0.8125rem;
+    color: var(--color-gem-gold);
+    font-weight: 500;
+  }
+
+  /* ── FAQS ── */
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--color-gem-border);
+  }
+  .faq-item:first-child {
+    border-top: 1px solid var(--color-gem-border);
+  }
+
+  .faq-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+    gap: 1rem;
+  }
+
+  .faq-icon {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-gem-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--color-gem-gold);
+    transition: transform 0.2s;
+    line-height: 1;
+  }
+
+  .faq-item.open .faq-icon {
+    transform: rotate(45deg);
+  }
+  .faq-body {
+    display: none;
+    padding-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.7;
+  }
+  .faq-item.open .faq-body {
+    display: block;
+  }
+
+  /* ── EVENTS ── */
+  .events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .event-list-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: var(--color-gem-mist);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .event-list-item:hover {
+    border-color: var(--color-gem-gold);
+    background: white;
+  }
+  .event-list-date {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    white-space: nowrap;
+  }
+  .event-list-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .event-list-cat {
+    font-size: 0.75rem;
+    color: var(--color-gem-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.125rem;
+  }
+  .event-list-ticket {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── REVIEWS ── */
+  .reviews-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .reviews-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .reviews-avg-stars {
+    color: var(--color-gem-gold);
+    font-size: 1rem;
+  }
+  .reviews-avg-num {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .reviews-avg-label {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+  }
+
+  .reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .review-item {
+    padding: 1.25rem;
+    background: var(--color-gem-mist);
+    border-radius: 10px;
+  }
+
+  .review-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+  }
+  .review-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .review-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    flex-shrink: 0;
+  }
+
+  .review-author {
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+  .review-date {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+  }
+  .review-stars {
+    color: var(--color-gem-gold);
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  .review-body {
+    font-size: 0.9rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.65;
+  }
+
+  .no-reviews {
+    color: var(--color-gem-text-subtle);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .review-form-wrap {
+    border-top: 1px solid var(--color-gem-border);
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .review-form-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  @media (max-width: 480px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Star picker */
+  .star-picker {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .star-pick-btn {
+    font-size: 1.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gem-border);
+    transition: color 0.1s;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .star-pick-btn.filled {
+    color: var(--color-gem-gold);
+  }
+
+  /* ── SIDEBAR ── */
+  .listing-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sidebar-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.25rem;
+  }
+
+  .sidebar-card-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color-gem-text);
+  }
+
+  .cta-card {
+    background: var(--color-gem-dark);
+    border-color: var(--color-gem-border-dark);
+  }
+
+  .cta-card .btn-outline-dark {
+    color: white;
+  }
+
+  .cta-card .btn-outline-dark:hover {
+    color: var(--color-gem-gold);
+  }
+
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+
+  .contact-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+  .contact-link {
+    color: var(--color-gem-gold);
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: block;
+    margin-top: 0.25rem;
+  }
+  .contact-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Hours */
+  .hours-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .hours-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    padding: 0.25rem 0;
+  }
+
+  .hours-today {
+    color: var(--color-gem-text);
+    font-weight: 600;
+  }
+
+  .hours-today .hours-day {
+    color: var(--color-gem-gold);
+  }
+  .hours-day {
+    flex-shrink: 0;
+  }
+  .hours-time {
+    color: inherit;
+    text-align: right;
+  }
+
+  /* Locations */
+  .locations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .location-item {
+    padding: 0.875rem;
+    background: var(--color-gem-mist);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .location-primary-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+    margin-bottom: 0.25rem;
+  }
+
+  .location-neighborhood {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+  }
+
+  /* Socials */
+  .socials-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .social-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .social-item:hover {
+    background: var(--color-gem-mist);
+    border-color: var(--color-gem-border);
+    color: var(--color-gem-text);
+  }
+
+  /* Spotlight */
+  .spotlight-card {
+    background: var(--color-gem-dark);
+    border-color: var(--color-gem-border-dark);
+  }
+  .spotlight-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-gem-gold);
+    margin-bottom: 0.5rem;
+  }
+  .spotlight-headline {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+  .spotlight-week {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 0.75rem;
+  }
+
+  /* ── RELATED ── */
+  .related-section {
+    background: var(--color-gem-mist);
+    padding: 4rem 2rem;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 768px) {
+    .related-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .related-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .w-full {
+    width: 100%;
+    justify-content: center;
+  }
+</style>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll(".faq-trigger").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const item = trigger.closest(".faq-item");
+      const isOpen = item?.classList.contains("open");
+      document
+        .querySelectorAll(".faq-item")
+        .forEach((i) => i.classList.remove("open"));
+      if (!isOpen) item?.classList.add("open");
+    });
+  });
+
+  // Star picker
+  const starBtns = document.querySelectorAll(".star-pick-btn");
+  const ratingInput = document.getElementById(
+    "rating-input"
+  ) as HTMLInputElement;
+  let selectedRating = 0;
+
+  starBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedRating = parseInt((btn as HTMLElement).dataset.value ?? "0");
+      ratingInput.value = String(selectedRating);
+      starBtns.forEach((b, i) => {
+        b.textContent = i < selectedRating ? "★" : "☆";
+        b.classList.toggle("filled", i < selectedRating);
+      });
+    });
+
+    btn.addEventListener("mouseenter", () => {
+      const hoverVal = parseInt((btn as HTMLElement).dataset.value ?? "0");
+      starBtns.forEach((b, i) => {
+        b.textContent = i < hoverVal ? "★" : "☆";
+      });
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      starBtns.forEach((b, i) => {
+        b.textContent = i < selectedRating ? "★" : "☆";
+      });
+    });
+  });
+
+  // Review form
+  document
+    .getElementById("review-form")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const data = new FormData(form);
+
+      if (!data.get("rating")) {
+        alert("Please select a star rating.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/reviews", {
+          method: "POST",
+          body: JSON.stringify(Object.fromEntries(data)),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (res.ok) {
+          form.reset();
+          selectedRating = 0;
+          ratingInput.value = "";
+          starBtns.forEach((b) => {
+            b.textContent = "☆";
+            b.classList.remove("filled");
+          });
+          alert("Thanks for your review! It will appear after moderation.");
+        } else {
+          alert("Something went wrong. Please try again.");
+        }
+      } catch {
+        alert("Something went wrong. Please try again.");
+      }
+    });
+</script>

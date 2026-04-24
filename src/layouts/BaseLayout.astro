@@ -1,0 +1,169 @@
+---
+import "..//styles/starwind.css";
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
+  noindex?: boolean;
+  nofollow?: boolean;
+  bodyClass?: string;
+  article?: {
+    publishedTime?: Date;
+    modifiedTime?: Date;
+    authors?: string[];
+    tags?: string[];
+  };
+}
+
+const {
+  title,
+  description,
+  image,
+  imageAlt,
+  noindex = false,
+  nofollow = false,
+  bodyClass = "",
+  article,
+} = Astro.props;
+
+// ─── Site Config (hardcoded — swap for DB/CMS later) ──────
+const site = {
+  name: "Hidden Gems Boise",
+  tagline: "Discover Boise's Best Kept Secrets",
+  description:
+    "Curated local directory spotlighting the best independently owned businesses across the Treasure Valley.",
+  url: "https://hiddengemsboise.com",
+  locale: "en_US",
+  twitterHandle: "@hiddengemsboise",
+  themeColor: "#C9A84C",
+  logo: "/images/logo.png",
+  ogImage: "/images/og-default.jpg",
+};
+
+const pageTitle = title ? `${title} — ${site.name}` : site.name;
+const pageDescription = description ?? site.description;
+const pageImage = image ?? site.ogImage;
+const canonicalUrl = new URL(Astro.url.pathname, site.url).toString();
+
+// ─── JSON-LD ──────────────────────────────────────────────
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: site.name,
+  url: site.url,
+  description: site.description,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${site.url}/explore?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const robotsContent = [
+  noindex ? "noindex" : "index",
+  nofollow ? "nofollow" : "follow",
+].join(", ");
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Primary Meta -->
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <meta name="robots" content={robotsContent} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="theme-color" content={site.themeColor} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={article ? "article" : "website"} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={pageImage} />
+    <meta property="og:image:alt" content={imageAlt ?? pageTitle} />
+    <meta property="og:locale" content={site.locale} />
+
+    <!-- Article meta -->
+    {
+      article?.publishedTime && (
+        <meta
+          property="article:published_time"
+          content={article.publishedTime.toISOString()}
+        />
+      )
+    }
+    {
+      article?.modifiedTime && (
+        <meta
+          property="article:modified_time"
+          content={article.modifiedTime.toISOString()}
+        />
+      )
+    }
+    {
+      article?.authors?.map((a) => (
+        <meta property="article:author" content={a} />
+      ))
+    }
+    {article?.tags?.map((t) => <meta property="article:tag" content={t} />)}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content={site.twitterHandle} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={pageImage} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD -->
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(websiteSchema)}
+    />
+
+    <!-- Additional head content from child layouts -->
+    <slot name="head" />
+  </head>
+
+  <body class={`bg-gem-mist text-gem-text antialiased ${bodyClass}`}>
+    <!-- Skip to content -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-gem-gold focus:px-4 focus:py-2 focus:text-gem-dark focus:font-semibold"
+    >
+      Skip to content
+    </a>
+
+    <slot name="header" />
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <slot name="footer" />
+
+    <slot name="scripts" />
+  </body>
+</html>
