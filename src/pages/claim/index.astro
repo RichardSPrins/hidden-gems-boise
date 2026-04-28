@@ -1,0 +1,1270 @@
+---
+// src/pages/claim/index.astro
+import PublicLayout from "@/layouts/PublicLayout.astro";
+
+// Pre-fill search if coming from a listing page
+const url = new URL(Astro.request.url);
+const prefillSlug = url.searchParams.get("slug") ?? "";
+const prefillName = url.searchParams.get("name") ?? "";
+---
+
+<PublicLayout
+  title="Claim Your Listing — Hidden Gems Boise"
+  description="Already listed on Hidden Gems Boise? Claim your listing to manage your profile, respond to reviews, and grow your presence."
+>
+  <!-- HERO -->
+  <div class="claim-hero">
+    <div class="claim-hero-bg"></div>
+    <div class="claim-hero-overlay"></div>
+    <div class="claim-hero-content section-container">
+      <p class="section-eyebrow" style="color: var(--color-gem-gold-light)">
+        It's Already Yours
+      </p>
+      <h1 class="claim-hero-title">Claim Your <em>Listing</em></h1>
+      <p class="claim-hero-sub">
+        If your business is already in our directory, claim it to take control
+        of your profile, respond to reviews, and manage your presence.
+      </p>
+    </div>
+  </div>
+
+  <div class="claim-layout section-container">
+    <!-- MAIN FLOW -->
+    <div class="claim-main">
+      <!-- STEP 1: Search -->
+      <div class="claim-step" id="step-search">
+        <div class="claim-step-header">
+          <div class="claim-step-num">1</div>
+          <div>
+            <h2 class="claim-step-title">Find Your Business</h2>
+            <p class="claim-step-sub">
+              Search by name to find your listing in our directory.
+            </p>
+          </div>
+        </div>
+
+        <div class="claim-search-row">
+          <input
+            type="text"
+            id="search-input"
+            class="gem-input"
+            placeholder="Search your business name…"
+            value={prefillName}
+            autocomplete="off"
+          />
+          <button class="btn-gold" id="search-btn" type="button">Search</button>
+        </div>
+
+        <div class="search-results hidden" id="search-results"></div>
+        <div class="search-empty hidden" id="search-empty">
+          <p>No unclaimed listings found for that name.</p>
+          <a href="/submit" class="claim-submit-link"
+            >Submit your business instead →</a
+          >
+        </div>
+      </div>
+
+      <!-- STEP 2: Confirm listing -->
+      <div class="claim-step claim-step-locked hidden" id="step-confirm">
+        <div class="claim-step-header">
+          <div class="claim-step-num">2</div>
+          <div>
+            <h2 class="claim-step-title">Confirm Your Listing</h2>
+            <p class="claim-step-sub">
+              Make sure this is the right business before continuing.
+            </p>
+          </div>
+        </div>
+        <div class="selected-biz-card" id="selected-biz-card"></div>
+        <button class="claim-change-btn" id="change-listing-btn" type="button">
+          ← Choose a different listing
+        </button>
+      </div>
+
+      <!-- STEP 3: Verify ownership -->
+      <div class="claim-step claim-step-locked hidden" id="step-verify">
+        <div class="claim-step-header">
+          <div class="claim-step-num">3</div>
+          <div>
+            <h2 class="claim-step-title">Verify Ownership</h2>
+            <p class="claim-step-sub">
+              Choose how you'd like us to verify you own this business.
+            </p>
+          </div>
+        </div>
+        <div class="verify-methods" id="verify-methods"></div>
+      </div>
+
+      <!-- STEP 4: Choose plan -->
+      <div class="claim-step claim-step-locked hidden" id="step-plan">
+        <div class="claim-step-header">
+          <div class="claim-step-num">4</div>
+          <div>
+            <h2 class="claim-step-title">Choose Your Plan</h2>
+            <p class="claim-step-sub">
+              You won't be charged until your claim is approved.
+            </p>
+          </div>
+        </div>
+
+        <div class="billing-toggle-wrap">
+          <span class="billing-label">Monthly</span>
+          <button
+            class="billing-toggle"
+            id="billing-toggle"
+            type="button"
+            aria-pressed="false"
+          >
+            <span class="billing-toggle-thumb"></span>
+          </button>
+          <span class="billing-label">
+            Annual <span class="billing-save-badge">Save ~17%</span>
+          </span>
+        </div>
+
+        <div class="tier-grid">
+          {
+            [
+              {
+                id: "BASIC",
+                name: "Basic",
+                monthly: 9,
+                annual: 90,
+                description: "Get listed and discoverable.",
+                features: [
+                  "Live listing",
+                  "Basic info",
+                  "One photo",
+                  "Contact details",
+                ],
+              },
+              {
+                id: "PRO",
+                name: "Pro",
+                monthly: 49,
+                annual: 490,
+                description: "The full listing experience.",
+                features: [
+                  "Full photo gallery",
+                  "Website & social links",
+                  "Events",
+                  "Review responses",
+                ],
+                popular: true,
+              },
+              {
+                id: "ELITE",
+                name: "Elite",
+                monthly: 99,
+                annual: 990,
+                description: "Maximum visibility + social spotlight.",
+                features: [
+                  "Featured placement",
+                  "Homepage carousel",
+                  "Monthly social post",
+                  "Analytics",
+                ],
+              },
+            ].map((tier) => (
+              <label
+                class:list={["tier-card", tier.popular && "tier-card-popular"]}
+              >
+                <input
+                  type="radio"
+                  name="claim-tier"
+                  value={tier.id}
+                  class="sr-only tier-radio"
+                  checked={tier.popular}
+                />
+                {tier.popular && (
+                  <span class="tier-popular-badge">Most Popular</span>
+                )}
+                <div class="tier-name">{tier.name}</div>
+                <div class="tier-price">
+                  <span class="tier-price-monthly">
+                    <strong>${tier.monthly}</strong>/mo
+                  </span>
+                  <span class="tier-price-annual" style="display:none">
+                    <strong>${tier.annual}</strong>/yr
+                  </span>
+                </div>
+                <p class="tier-desc">{tier.description}</p>
+                <ul class="tier-features">
+                  {tier.features.map((f) => (
+                    <li>✓ {f}</li>
+                  ))}
+                </ul>
+              </label>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- STEP 5: Your info -->
+      <div class="claim-step claim-step-locked hidden" id="step-info">
+        <div class="claim-step-header">
+          <div class="claim-step-num">5</div>
+          <div>
+            <h2 class="claim-step-title">Your Information</h2>
+            <p class="claim-step-sub">
+              We'll use this to contact you about your claim and set up your
+              account.
+            </p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="gem-label" for="ownerName"
+              >Your Name <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="ownerName"
+              type="text"
+              placeholder="Jane Smith"
+              required
+            />
+          </div>
+          <div class="form-field">
+            <label class="gem-label" for="ownerEmail"
+              >Your Email <span class="required">*</span></label
+            >
+            <input
+              class="gem-input"
+              id="ownerEmail"
+              type="email"
+              placeholder="jane@yourbusiness.com"
+              required
+            />
+          </div>
+          <div class="form-field">
+            <label class="gem-label" for="ownerPhone"
+              >Your Phone <span class="form-optional">(optional)</span></label
+            >
+            <input
+              class="gem-input"
+              id="ownerPhone"
+              type="tel"
+              placeholder="(208) 555-0100"
+            />
+          </div>
+          <div class="form-field form-field-full">
+            <label class="gem-label" for="claimNotes"
+              >Anything to help us verify? <span class="form-optional"
+                >(optional)</span
+              ></label
+            >
+            <textarea
+              class="gem-textarea"
+              id="claimNotes"
+              placeholder="e.g. I'm the owner since 2019, you can call the number on the listing…"
+              rows="3"></textarea>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div class="submit-error hidden" id="claim-error">
+          <p id="claim-error-text"></p>
+        </div>
+
+        <div class="claim-submit-row">
+          <p class="submit-disclaimer">
+            By submitting you confirm you are the authorized owner or
+            representative of this business. You won't be charged until your
+            claim is approved.
+          </p>
+          <button
+            class="btn-gold submit-btn"
+            id="claim-submit-btn"
+            type="button"
+          >
+            Submit Claim →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="claim-sidebar">
+      <div class="claim-sidebar-card">
+        <div class="claim-sidebar-icon">🔐</div>
+        <h3 class="claim-sidebar-title">How Claiming Works</h3>
+        <div class="claim-how-steps">
+          <div class="claim-how-step">
+            <span class="claim-how-num">1</span>
+            <span>Find your listing and verify you're the owner</span>
+          </div>
+          <div class="claim-how-step">
+            <span class="claim-how-num">2</span>
+            <span>Choose a plan — no charge until approved</span>
+          </div>
+          <div class="claim-how-step">
+            <span class="claim-how-num">3</span>
+            <span>We review and contact you within 1–2 business days</span>
+          </div>
+          <div class="claim-how-step">
+            <span class="claim-how-num">4</span>
+            <span>Create your account and complete payment</span>
+          </div>
+          <div class="claim-how-step">
+            <span class="claim-how-num">5</span>
+            <span>Access your portal and manage your listing</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="claim-sidebar-card">
+        <h3 class="claim-sidebar-title">Not listed yet?</h3>
+        <p class="claim-sidebar-text">
+          If your business isn't in our directory yet, submit it and we'll get
+          you set up.
+        </p>
+        <a href="/submit" class="submit-claim-link">Submit your business →</a>
+      </div>
+
+      <div class="claim-sidebar-card">
+        <h3 class="claim-sidebar-title">Need help?</h3>
+        <p class="claim-sidebar-text">
+          Can't find your listing or having trouble? Reach out and we'll sort it
+          out.
+        </p>
+        <a href="mailto:hello@hiddengemsboise.com" class="submit-claim-link"
+          >hello@hiddengemsboise.com</a
+        >
+      </div>
+    </aside>
+  </div>
+</PublicLayout>
+
+<style>
+  /* HERO */
+  .claim-hero {
+    position: relative;
+    height: 260px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    padding-top: 4rem;
+  }
+  .claim-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&auto=format&fit=crop&q=80");
+    background-size: cover;
+    background-position: center 40%;
+  }
+  .claim-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 13, 13, 0.3) 0%,
+      rgba(13, 13, 13, 0.8) 100%
+    );
+  }
+  .claim-hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: 2.5rem;
+    width: 100%;
+  }
+  .claim-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .claim-hero-title em {
+    font-style: italic;
+    color: var(--color-gem-gold-light);
+  }
+  .claim-hero-sub {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9375rem;
+    max-width: 520px;
+  }
+
+  /* LAYOUT */
+  .claim-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 2.5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .claim-layout {
+      grid-template-columns: 1fr;
+    }
+    .claim-sidebar {
+      order: -1;
+    }
+  }
+
+  /* STEPS */
+  .claim-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .claim-step {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.75rem;
+    transition: border-color 0.2s;
+  }
+
+  .claim-step-locked {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .claim-step.active {
+    opacity: 1;
+    pointer-events: auto;
+    border-color: var(--color-gem-gold);
+  }
+
+  .claim-step.completed {
+    opacity: 1;
+    pointer-events: none;
+    border-color: var(--color-gem-border);
+    background: var(--color-gem-mist);
+  }
+
+  .claim-step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .claim-step-num {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+
+  .claim-step-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+  .claim-step-sub {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+  }
+
+  /* SEARCH */
+  .claim-search-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .claim-search-row .gem-input {
+    flex: 1;
+  }
+
+  .search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .search-result-item {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: white;
+  }
+
+  .search-result-item:hover {
+    border-color: var(--color-gem-gold);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .search-result-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--color-gem-mist-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .search-result-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .search-result-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .search-result-cat {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+    margin-top: 0.125rem;
+  }
+  .search-result-loc {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+  }
+  .search-result-cta {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    white-space: nowrap;
+  }
+
+  .search-empty {
+    margin-top: 1rem;
+    padding: 1.5rem;
+    background: var(--color-gem-mist);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .search-empty p {
+    font-size: 0.9rem;
+    color: var(--color-gem-text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  /* SELECTED BIZ CARD */
+  .selected-biz-card {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(201, 168, 76, 0.05);
+    border: 1.5px solid rgba(201, 168, 76, 0.25);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+  }
+
+  .selected-biz-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--color-gem-mist-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .selected-biz-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .selected-biz-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+  .selected-biz-cat {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+    margin-top: 0.125rem;
+  }
+  .selected-biz-loc {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-subtle);
+    margin-top: 0.125rem;
+  }
+
+  .claim-change-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+  }
+  .claim-change-btn:hover {
+    color: var(--color-gem-text);
+  }
+
+  /* VERIFICATION METHODS */
+  .verify-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .verify-method-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .verify-method-label:hover {
+    border-color: var(--color-gem-gold);
+  }
+  .verify-method-label:has(input:checked) {
+    border-color: var(--color-gem-gold);
+    background: rgba(201, 168, 76, 0.04);
+  }
+
+  .verify-method-radio {
+    margin-top: 0.2rem;
+    accent-color: var(--color-gem-gold);
+    flex-shrink: 0;
+  }
+  .verify-method-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.2rem;
+  }
+  .verify-method-desc {
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+
+  /* TIERS */
+  .billing-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .billing-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gem-text-muted);
+  }
+  .billing-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--color-gem-border);
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .billing-toggle.active {
+    background: var(--color-gem-gold);
+  }
+  .billing-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    display: block;
+  }
+  .billing-toggle.active .billing-toggle-thumb {
+    transform: translateX(20px);
+  }
+  .billing-save-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.5rem;
+    background: rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(201, 168, 76, 0.25);
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    margin-left: 0.375rem;
+  }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 768px) {
+    .tier-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tier-card {
+    position: relative;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .tier-card:hover {
+    border-color: var(--color-gem-gold);
+  }
+  .tier-card:has(.tier-radio:checked) {
+    border-color: var(--color-gem-gold);
+    background: rgba(201, 168, 76, 0.04);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+  }
+  .tier-card-popular {
+    border-color: var(--color-gem-gold);
+  }
+  .tier-popular-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-gem-gold);
+    color: var(--color-gem-dark);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.75rem;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .tier-name {
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+  .tier-price strong {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+  }
+  .tier-price span {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+  }
+  .tier-desc {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+  .tier-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .tier-features li {
+    font-size: 0.8rem;
+    color: var(--color-gem-text-muted);
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .form-field-full {
+    grid-column: 1 / -1;
+  }
+  .gem-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-gem-text);
+  }
+  .gem-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+    background: var(--color-gem-mist);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .gem-input:focus {
+    border-color: var(--color-gem-gold);
+    background: white;
+  }
+  .gem-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--color-gem-text);
+    background: var(--color-gem-mist);
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  .gem-textarea:focus {
+    border-color: var(--color-gem-gold);
+    background: white;
+  }
+  .required {
+    color: var(--color-gem-gold);
+  }
+  .form-optional {
+    font-size: 0.75rem;
+    color: var(--color-gem-text-subtle);
+    font-weight: 400;
+  }
+
+  /* ERROR */
+  .submit-error {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    margin-top: 1rem;
+  }
+
+  /* SUBMIT ROW */
+  .claim-submit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-gem-border);
+  }
+  .submit-disclaimer {
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-subtle);
+    max-width: 380px;
+    line-height: 1.6;
+  }
+  .submit-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* SIDEBAR */
+  .claim-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: sticky;
+    top: 100px;
+  }
+  .claim-sidebar-card {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-gem-border);
+    padding: 1.5rem;
+  }
+  .claim-sidebar-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .claim-sidebar-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.875rem;
+  }
+  .claim-sidebar-text {
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+  .submit-claim-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    text-decoration: none;
+  }
+  .submit-claim-link:hover {
+    text-decoration: underline;
+  }
+  .claim-how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .claim-how-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-gem-text-muted);
+    line-height: 1.5;
+  }
+  .claim-how-num {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba(201, 168, 76, 0.12);
+    color: var(--color-gem-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .claim-submit-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    text-decoration: none;
+  }
+  .claim-submit-link:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<script>
+  // State
+  let selectedBiz: any = null;
+  let selectedVerification: string | null = null;
+
+  const searchInput = document.getElementById(
+    "search-input"
+  ) as HTMLInputElement;
+  const searchBtn = document.getElementById("search-btn") as HTMLButtonElement;
+  const searchResults = document.getElementById(
+    "search-results"
+  ) as HTMLDivElement;
+  const searchEmpty = document.getElementById("search-empty") as HTMLDivElement;
+
+  const stepSearch = document.getElementById("step-search") as HTMLDivElement;
+  const stepConfirm = document.getElementById("step-confirm") as HTMLDivElement;
+  const stepVerify = document.getElementById("step-verify") as HTMLDivElement;
+  const stepPlan = document.getElementById("step-plan") as HTMLDivElement;
+  const stepInfo = document.getElementById("step-info") as HTMLDivElement;
+
+  const selectedBizCard = document.getElementById(
+    "selected-biz-card"
+  ) as HTMLDivElement;
+  const verifyMethodsWrap = document.getElementById(
+    "verify-methods"
+  ) as HTMLDivElement;
+  const changeListingBtn = document.getElementById(
+    "change-listing-btn"
+  ) as HTMLButtonElement;
+
+  const claimSubmitBtn = document.getElementById(
+    "claim-submit-btn"
+  ) as HTMLButtonElement;
+  const claimError = document.getElementById("claim-error") as HTMLDivElement;
+  const claimErrorText = document.getElementById(
+    "claim-error-text"
+  ) as HTMLParagraphElement;
+
+  function unlockStep(el: HTMLElement, scroll = true) {
+    el.classList.remove("hidden", "claim-step-locked");
+    el.classList.add("active");
+    // if (scroll) {
+    //   setTimeout(
+    //     () => el.scrollIntoView({ behavior: "smooth", block: "start" }),
+    //     50
+    //   );
+    // }
+  }
+  function lockStep(el: HTMLElement) {
+    el.classList.add("claim-step-locked");
+    el.classList.remove("active", "completed");
+  }
+
+  function completeStep(el: HTMLElement) {
+    el.classList.remove("active");
+    el.classList.add("completed");
+  }
+
+  // Search
+  async function doSearch() {
+    const q = searchInput.value.trim();
+    if (q.length < 2) return;
+
+    searchBtn.textContent = "Searching…";
+    searchBtn.disabled = true;
+
+    try {
+      const res = await fetch(
+        `/api/web/claim-search?q=${encodeURIComponent(q)}`
+      );
+      const data = await res.json();
+
+      searchResults.innerHTML = "";
+      searchResults.classList.add("hidden");
+      searchEmpty.classList.add("hidden");
+
+      if (!data.results || data.results.length === 0) {
+        searchEmpty.classList.remove("hidden");
+        return;
+      }
+
+      searchResults.classList.remove("hidden");
+      data.results.forEach((biz: any) => {
+        const item = document.createElement("div");
+        item.className = "search-result-item";
+        item.innerHTML = `
+          <div style="width:56px;height:56px;border-radius:8px;background:var(--color-gem-mist);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;overflow:hidden;">
+            ${biz.images?.[0] ? `<img src="${biz.images[0].url}" alt="${biz.name}" style="width:100%;height:100%;object-fit:cover;" />` : "📍"}
+          </div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:600;color:var(--color-gem-text);">${biz.name}</div>
+            <div style="font-size:0.8rem;color:var(--color-gem-text-muted);margin-top:0.125rem;">${biz.category?.name ?? ""}</div>
+            ${biz.locations?.[0]?.neighborhood ? `<div style="font-size:0.8rem;color:var(--color-gem-text-subtle);margin-top:0.125rem;">📍 ${biz.locations[0].neighborhood}, Boise</div>` : ""}
+          </div>
+          <span style="font-size:0.8125rem;font-weight:600;color:var(--color-gem-gold);white-space:nowrap;">Select →</span>
+        `;
+        item.style.cssText =
+          "display:grid;grid-template-columns:56px 1fr auto;gap:1rem;align-items:center;padding:1rem 1.25rem;border:1.5px solid var(--color-gem-border);border-radius:10px;cursor:pointer;background:white;transition:all 0.15s;margin-bottom:0.75rem;";
+        item.addEventListener(
+          "mouseenter",
+          () => (item.style.borderColor = "var(--color-gem-gold)")
+        );
+        item.addEventListener(
+          "mouseleave",
+          () => (item.style.borderColor = "var(--color-gem-border)")
+        );
+        item.addEventListener("click", () => selectListing(biz));
+        searchResults.appendChild(item);
+      });
+    } finally {
+      searchBtn.textContent = "Search";
+      searchBtn.disabled = false;
+    }
+  }
+
+  searchBtn.addEventListener("click", doSearch);
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doSearch();
+  });
+
+  // Select listing
+  async function selectListing(biz: any) {
+    // Fetch full claimable data
+    const res = await fetch(`/api/web/claim-listing?slug=${biz.slug}`);
+    const data = await res.json();
+
+    if (data.claimPending) {
+      searchResults.innerHTML = `<div class="search-empty"><p>This listing already has a pending claim under review. Check back soon.</p></div>`;
+      return;
+    }
+
+    if (data.notFound) {
+      searchResults.innerHTML = `<div class="search-empty"><p>This listing is not available to claim.</p></div>`;
+      return;
+    }
+
+    selectedBiz = data.biz;
+
+    // Render selected biz card
+    selectedBizCard.innerHTML = `
+      <div style="width:72px;height:72px;border-radius:8px;background:var(--color-gem-mist);display:flex;align-items:center;justify-content:center;font-size:1.75rem;overflow:hidden;flex-shrink:0;">
+        ${data.biz.image ? `<img src="${data.biz.image}" alt="${data.biz.name}" style="width:100%;height:100%;object-fit:cover;" />` : "📍"}
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:600;color:var(--color-gem-text);">${data.biz.name}</div>
+        <div style="font-size:0.8rem;color:var(--color-gem-text-muted);margin-top:0.2rem;">${data.biz.categoryName ?? ""}${data.biz.subcategoryName ? " · " + data.biz.subcategoryName : ""}</div>
+        ${data.biz.neighborhood ? `<div style="font-size:0.8rem;color:var(--color-gem-text-subtle);margin-top:0.2rem;">📍 ${data.biz.neighborhood}, Boise</div>` : ""}
+      </div>
+    `;
+    selectedBizCard.style.cssText =
+      "display:grid;grid-template-columns:72px 1fr;gap:1rem;align-items:center;padding:1rem 1.25rem;background:rgba(201,168,76,0.05);border:1.5px solid rgba(201,168,76,0.25);border-radius:10px;margin-bottom:0.75rem;";
+    // Render verification methods
+    verifyMethodsWrap.innerHTML = "";
+    data.verificationMethods.forEach((method: any) => {
+      const label = document.createElement("label");
+      label.className = "verify-method-label";
+      label.innerHTML = `
+        <input type="radio" name="verify-method" value="${method.id}" class="verify-method-radio" />
+        <div>
+          <div class="verify-method-name">${method.label}</div>
+          <div class="verify-method-desc">${method.description}</div>
+        </div>
+      `;
+      label.querySelector("input")?.addEventListener("change", () => {
+        selectedVerification = method.id;
+        completeStep(stepVerify);
+        unlockStep(stepPlan, true);
+        unlockStep(stepInfo, false);
+      });
+      verifyMethodsWrap.appendChild(label);
+    });
+
+    completeStep(stepSearch);
+    unlockStep(stepConfirm); // only scroll to step 2
+    stepVerify.classList.remove("hidden", "claim-step-locked");
+    stepPlan.classList.remove("hidden", "claim-step-locked");
+    stepInfo.classList.remove("hidden", "claim-step-locked");
+  }
+
+  // Change listing
+  changeListingBtn?.addEventListener("click", () => {
+    selectedBiz = null;
+    selectedVerification = null;
+    stepSearch.classList.remove("completed");
+    stepSearch.classList.add("active");
+    lockStep(stepConfirm);
+    lockStep(stepVerify);
+    lockStep(stepPlan);
+    lockStep(stepInfo);
+    stepConfirm.classList.add("hidden");
+    stepVerify.classList.add("hidden");
+    stepPlan.classList.add("hidden");
+    stepInfo.classList.add("hidden");
+    searchResults.innerHTML = "";
+    searchResults.classList.add("hidden");
+    searchEmpty.classList.add("hidden");
+    searchInput.focus();
+  });
+
+  // Billing toggle
+  const toggle = document.getElementById("billing-toggle") as HTMLButtonElement;
+  const monthlyPrices = document.querySelectorAll(".tier-price-monthly");
+  const annualPrices = document.querySelectorAll(".tier-price-annual");
+  let isAnnual = false;
+
+  toggle?.addEventListener("click", () => {
+    isAnnual = !isAnnual;
+    toggle.classList.toggle("active", isAnnual);
+    toggle.setAttribute("aria-pressed", String(isAnnual));
+    monthlyPrices.forEach(
+      (el) => ((el as HTMLElement).style.display = isAnnual ? "none" : "")
+    );
+    annualPrices.forEach(
+      (el) => ((el as HTMLElement).style.display = isAnnual ? "" : "none")
+    );
+  });
+
+  // Submit claim
+  claimSubmitBtn?.addEventListener("click", async () => {
+    const ownerName = (
+      document.getElementById("ownerName") as HTMLInputElement
+    ).value.trim();
+    const ownerEmail = (
+      document.getElementById("ownerEmail") as HTMLInputElement
+    ).value.trim();
+    const ownerPhone = (
+      document.getElementById("ownerPhone") as HTMLInputElement
+    ).value.trim();
+    const claimNotes = (
+      document.getElementById("claimNotes") as HTMLTextAreaElement
+    ).value.trim();
+    const tier = (
+      document.querySelector(
+        'input[name="claim-tier"]:checked'
+      ) as HTMLInputElement
+    )?.value;
+
+    if (
+      !ownerName ||
+      !ownerEmail ||
+      !tier ||
+      !selectedBiz ||
+      !selectedVerification
+    ) {
+      claimError.classList.remove("hidden");
+      claimErrorText.textContent = "Please complete all required fields.";
+      return;
+    }
+
+    claimSubmitBtn.disabled = true;
+    claimSubmitBtn.textContent = "Submitting…";
+    claimError.classList.add("hidden");
+
+    try {
+      const res = await fetch("/api/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: selectedBiz.id,
+          verificationMethod: selectedVerification,
+          ownerName,
+          ownerEmail,
+          ownerPhone: ownerPhone || null,
+          tier,
+          billingCycle: isAnnual ? "annual" : "monthly",
+          notes: claimNotes || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        window.location.href = "/claim/thank-you";
+        return;
+      }
+
+      claimError.classList.remove("hidden");
+      claimErrorText.textContent =
+        data.message ?? data.error ?? "Something went wrong.";
+    } catch {
+      claimError.classList.remove("hidden");
+      claimErrorText.textContent = "Something went wrong. Please try again.";
+    } finally {
+      claimSubmitBtn.disabled = false;
+      claimSubmitBtn.textContent = "Submit Claim →";
+    }
+  });
+
+  // Auto-search if prefilled
+  const prefillSlug = new URLSearchParams(window.location.search).get("slug");
+  const prefillName = new URLSearchParams(window.location.search).get("name");
+  if (prefillName) {
+    doSearch();
+  }
+</script>
