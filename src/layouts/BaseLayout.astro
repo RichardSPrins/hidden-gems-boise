@@ -1,5 +1,9 @@
 ---
-import "..//styles/starwind.css";
+// src/layouts/BaseLayout.astro
+import "../styles/starwind.css";
+import JsonLd from "@/components/SEO/JsonLd.astro";
+import { createWebsiteSchema } from "@/lib/schema";
+
 export interface Props {
   title?: string;
   description?: string;
@@ -14,6 +18,9 @@ export interface Props {
     authors?: string[];
     tags?: string[];
   };
+  // Additional page-specific schemas passed from child layouts or pages
+  // BaseLayout always injects WebSite schema — pass extras here
+  schemas?: object[];
 }
 
 const {
@@ -25,9 +32,10 @@ const {
   nofollow = false,
   bodyClass = "",
   article,
+  schemas = [],
 } = Astro.props;
 
-// ─── Site Config (hardcoded — swap for DB/CMS later) ──────
+// ─── Site Config ──────────────────────────────────────────
 const site = {
   name: "Hidden Gems Boise",
   tagline: "Discover Boise's Best Kept Secrets",
@@ -46,27 +54,13 @@ const pageDescription = description ?? site.description;
 const pageImage = image ?? site.ogImage;
 const canonicalUrl = new URL(Astro.url.pathname, site.url).toString();
 
-// ─── JSON-LD ──────────────────────────────────────────────
-const websiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: site.name,
-  url: site.url,
-  description: site.description,
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${site.url}/explore?q={search_term_string}`,
-    },
-    "query-input": "required name=search_term_string",
-  },
-};
-
 const robotsContent = [
   noindex ? "noindex" : "index",
   nofollow ? "nofollow" : "follow",
 ].join(", ");
+
+// Always include WebSite schema, merge with any page-specific schemas
+const allSchemas = [createWebsiteSchema(), ...schemas];
 ---
 
 <!doctype html>
@@ -94,28 +88,18 @@ const robotsContent = [
     <meta property="og:locale" content={site.locale} />
 
     <!-- Article meta -->
-    {
-      article?.publishedTime && (
-        <meta
-          property="article:published_time"
-          content={article.publishedTime.toISOString()}
-        />
-      )
-    }
-    {
-      article?.modifiedTime && (
-        <meta
-          property="article:modified_time"
-          content={article.modifiedTime.toISOString()}
-        />
-      )
-    }
-    {
-      article?.authors?.map((a) => (
-        <meta property="article:author" content={a} />
-      ))
-    }
-    {article?.tags?.map((t) => <meta property="article:tag" content={t} />)}
+    {article?.publishedTime && (
+      <meta property="article:published_time" content={article.publishedTime.toISOString()} />
+    )}
+    {article?.modifiedTime && (
+      <meta property="article:modified_time" content={article.modifiedTime.toISOString()} />
+    )}
+    {article?.authors?.map((a) => (
+      <meta property="article:author" content={a} />
+    ))}
+    {article?.tags?.map((t) => (
+      <meta property="article:tag" content={t} />
+    ))}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -137,13 +121,10 @@ const robotsContent = [
       rel="stylesheet"
     />
 
-    <!-- JSON-LD -->
-    <script
-      type="application/ld+json"
-      set:html={JSON.stringify(websiteSchema)}
-    />
+    <!-- JSON-LD — all schemas injected here -->
+    <JsonLd schemas={allSchemas} />
 
-    <!-- Additional head content from child layouts -->
+    <!-- Additional head content from child layouts/pages -->
     <slot name="head" />
   </head>
 
@@ -163,7 +144,6 @@ const robotsContent = [
     </main>
 
     <slot name="footer" />
-
     <slot name="scripts" />
   </body>
 </html>

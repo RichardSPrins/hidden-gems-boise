@@ -1,0 +1,17 @@
+---
+// src/components/seo/JsonLd.astro
+// Renders one or more JSON-LD schema objects as <script type="application/ld+json"> tags
+// Usage: <JsonLd schemas={[websiteSchema, breadcrumbSchema]} />
+ 
+interface Props {
+  schemas: object | object[];
+}
+ 
+const { schemas } = Astro.props;
+const schemaArray = Array.isArray(schemas) ? schemas : [schemas];
+---
+ 
+{schemaArray.map(schema => (
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+))}
+ 

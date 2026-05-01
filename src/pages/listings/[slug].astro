@@ -2,6 +2,7 @@
 // src/pages/listings/[slug].astro
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { GET } from "@/pages/api/web/listings";
+import { createLocalBusinessSchema, createBreadcrumbSchema, SITE_URL } from "@/lib/schema";
 
 const { slug } = Astro.params;
 
@@ -18,7 +19,7 @@ if (data.notFound) {
 const { biz, reviews, upcomingEvents, related } = data;
 
 // Is this listing claimable?
-const isUnclaimed = !biz.ownerId && biz.claimStatus !== "PENDING";
+const isUnclaimed = !biz.userId && biz.claimStatus !== "PENDING";
 const claimUrl = `/claim?slug=${biz.slug}&name=${encodeURIComponent(biz.name)}`;
 
 const priceMap: Record<string, string> = {
@@ -90,12 +91,44 @@ const primaryCtaLabel = hasBooking ? "Book Now →" : "Visit Website →";
 const googleMapsUrl = primaryLocation
   ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${primaryLocation.address}, ${primaryLocation.city}, ${primaryLocation.state}`)}`
   : null;
+
+// ─── Schema ───────────────────────────────────────────────
+const schemas = [
+  createLocalBusinessSchema({
+    name: biz.name,
+    slug: biz.slug,
+    description: biz.bio,
+    image: primaryImage?.url,
+    phone: biz.contact?.phone,
+    email: biz.contact?.email,
+    websiteUrl: biz.websiteUrl,
+    address: primaryLocation?.address,
+    city: primaryLocation?.city,
+    state: primaryLocation?.state,
+    zip: primaryLocation?.zip,
+    lat: primaryLocation?.lat,
+    lng: primaryLocation?.lng,
+    pricePoint: biz.pricePoint,
+    averageRating: biz.averageRating,
+    reviewCount: biz.reviewCount,
+    categoryName: biz.category?.name,
+    hours: primaryLocation?.hours,
+    socials: biz.socials,
+  }),
+  createBreadcrumbSchema([
+    { name: "Home", url: SITE_URL },
+    { name: "Explore", url: `${SITE_URL}/explore` },
+    { name: biz.category.name, url: `${SITE_URL}/explore/${biz.category.slug}` },
+    { name: biz.name, url: `${SITE_URL}/listings/${biz.slug}` },
+  ]),
+];
 ---
 
 <PublicLayout
   title={biz.name}
   description={biz.bio ?? `${biz.name} — ${biz.category.name} in Boise, ID`}
   image={primaryImage?.url}
+  schemas={schemas}
 >
   <!-- HERO -->
   <div class="listing-hero">
