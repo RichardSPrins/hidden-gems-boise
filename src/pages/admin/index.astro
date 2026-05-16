@@ -1,0 +1,123 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import {
+  business,
+  publicSubmission,
+  review,
+  gemSpotlight,
+} from "@/lib/db/schema";
+import { eq, count, desc, isNotNull } from "drizzle-orm";
+
+const [
+  [{ total: totalBusinesses }],
+  [{ total: approvedBusinesses }],
+  [{ total: pendingSubmissions }],
+  [{ total: pendingReviews }],
+  [{ total: publishedSpotlights }],
+] = await Promise.all([
+  db.select({ total: count() }).from(business),
+  db.select({ total: count() }).from(business).where(eq(business.status, "APPROVED")),
+  db.select({ total: count() }).from(publicSubmission).where(eq(publicSubmission.status, "PENDING")),
+  db.select({ total: count() }).from(review).where(eq(review.isApproved, false)),
+  db.select({ total: count() }).from(gemSpotlight).where(isNotNull(gemSpotlight.publishedAt)),
+]);
+
+const recentBusinesses = await db.query.business.findMany({
+  orderBy: desc(business.createdAt),
+  limit: 6,
+  with: { category: true },
+});
+
+const recentSubmissions = await db.query.publicSubmission.findMany({
+  where: eq(publicSubmission.status, "PENDING"),
+  orderBy: desc(publicSubmission.createdAt),
+  limit: 5,
+});
+
+const cards = [
+  { label: "Total listings", value: totalBusinesses, sub: `${approvedBusinesses} approved`, href: "/admin/businesses" },
+  { label: "Pending submissions", value: pendingSubmissions, sub: "Awaiting review", href: "/admin/submissions" },
+  { label: "Pending reviews", value: pendingReviews, sub: "Need moderation", href: "/admin/businesses" },
+  { label: "Published spotlights", value: publishedSpotlights, sub: "Gems of the week", href: "/admin/gems" },
+];
+---
+
+<AdminLayout title="Admin Dashboard" activeSection="dashboard">
+  <div slot="page-header" class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-display text-3xl text-gem-text">Dashboard</h1>
+      <p class="text-gem-text-muted text-sm mt-1">
+        Snapshot of every moving piece of the directory.
+      </p>
+    </div>
+    <a
+      href="/admin/businesses/new"
+      class="bg-gem-gold text-gem-dark font-semibold px-4 py-2 rounded-lg hover:bg-gem-gold-light transition-colors no-underline"
+    >
+      + New Listing
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    {cards.map((c) => (
+      <a
+        href={c.href}
+        class="bg-white border border-gem-border rounded-2xl p-5 hover:border-gem-gold transition-colors no-underline block"
+      >
+        <p class="text-xs uppercase tracking-widest text-gem-text-subtle mb-2">{c.label}</p>
+        <p class="text-3xl font-display text-gem-text">{c.value}</p>
+        <p class="text-xs text-gem-text-muted mt-1">{c.sub}</p>
+      </a>
+    ))}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section class="bg-white border border-gem-border rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg text-gem-text">Recent listings</h2>
+        <a href="/admin/businesses" class="text-sm text-gem-gold hover:underline">View all</a>
+      </div>
+      {recentBusinesses.length === 0 ? (
+        <p class="text-sm text-gem-text-muted">No listings yet. <a href="/admin/businesses/new" class="text-gem-gold hover:underline">Add the first one →</a></p>
+      ) : (
+        <ul class="divide-y divide-gem-border list-none m-0 p-0">
+          {recentBusinesses.map((b) => (
+            <li class="py-2.5 flex items-center justify-between">
+              <div>
+                <a href={`/admin/businesses/${b.id}`} class="text-sm font-medium text-gem-text hover:text-gem-gold no-underline">{b.name}</a>
+                <p class="text-xs text-gem-text-subtle">{b.category?.name} · {b.status}</p>
+              </div>
+              <a
+                href={`/listings/${b.slug}`}
+                target="_blank"
+                rel="noopener"
+                class="text-xs text-gem-text-muted hover:text-gem-gold"
+                aria-label={`View ${b.name} on the public site`}
+              >View ↗</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <section class="bg-white border border-gem-border rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg text-gem-text">Pending submissions</h2>
+        <a href="/admin/submissions" class="text-sm text-gem-gold hover:underline">View all</a>
+      </div>
+      {recentSubmissions.length === 0 ? (
+        <p class="text-sm text-gem-text-muted">No pending submissions. The public submit form will land them here.</p>
+      ) : (
+        <ul class="divide-y divide-gem-border list-none m-0 p-0">
+          {recentSubmissions.map((s) => (
+            <li class="py-2.5">
+              <a href={`/admin/submissions/${s.id}`} class="text-sm font-medium text-gem-text hover:text-gem-gold no-underline block">{s.businessName}</a>
+              <p class="text-xs text-gem-text-subtle">{s.ownerName} · {s.email}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </div>
+</AdminLayout>

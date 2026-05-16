@@ -1,0 +1,53 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { business, event } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/businesses");
+
+const biz = await db.query.business.findFirst({
+  where: eq(business.id, id),
+  columns: { id: true, name: true, slug: true },
+});
+if (!biz) return Astro.redirect("/admin/businesses");
+
+const events = await db.query.event.findMany({
+  where: eq(event.businessId, id),
+  orderBy: desc(event.startDateTime),
+  limit: 100,
+});
+---
+
+<AdminLayout title={`Events · ${biz.name}`} activeSection="businesses">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/businesses" class="hover:text-gem-gold">Businesses</a>
+      <span class="mx-2">/</span>
+      <a href={`/admin/businesses/${biz.id}`} class="hover:text-gem-gold">{biz.name}</a>
+      <span class="mx-2">/</span>
+      <span>Events</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Events</h1>
+    <p class="text-gem-text-muted text-sm mt-1">{events.length} total</p>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl p-6">
+    {events.length === 0 ? (
+      <p class="text-sm text-gem-text-muted">No events for this business yet. Event creation UI is on the roadmap — for now, events arrive via the public submit endpoint.</p>
+    ) : (
+      <ul class="space-y-2 list-none m-0 p-0">
+        {events.map((e) => (
+          <li class="border-b border-gem-border pb-2 last:border-b-0">
+            <p class="text-sm font-medium text-gem-text">{e.title}</p>
+            <p class="text-xs text-gem-text-subtle">
+              {new Date(e.startDateTime).toLocaleString()} · {e.category}
+              {e.isActive ? "" : " · INACTIVE"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</AdminLayout>

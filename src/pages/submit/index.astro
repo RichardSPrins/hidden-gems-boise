@@ -6,53 +6,6 @@ import { GET as getFormData } from "@/pages/api/submissions/form-data";
 const response = await getFormData({ request: Astro.request } as any);
 const { categories } = await response.json();
 
-const tiers = [
-  {
-    id: "BASIC",
-    name: "Basic",
-    monthly: 9,
-    annual: 90,
-    description: "Get your business listed and discoverable.",
-    features: [
-      "Live listing on Hidden Gems Boise",
-      "Basic business info",
-      "One primary photo",
-      "Contact details",
-    ],
-  },
-  {
-    id: "PRO",
-    name: "Pro",
-    monthly: 49,
-    annual: 490,
-    description: "The full listing experience. Most popular.",
-    features: [
-      "Everything in Basic +",
-      "Full photo gallery",
-      "Website & social links",
-      "Events listings",
-      "Review responses",
-      "Extended bio",
-    ],
-    popular: true,
-  },
-  {
-    id: "ELITE",
-    name: "Elite",
-    monthly: 99,
-    annual: 990,
-    description: "Maximum visibility and a monthly social spotlight.",
-    features: [
-      "Everything in Pro +",
-      "Featured placement in search",
-      "Homepage carousel inclusion",
-      "Monthly social spotlight post",
-      "Analytics dashboard",
-      "Priority support",
-    ],
-  },
-];
-
 const pricePoints = [
   { value: "ONE", label: "$" },
   { value: "TWO", label: "$$" },
@@ -86,72 +39,6 @@ const pricePoints = [
   <div class="submit-layout section-container">
     <!-- FORM SECTION -->
     <div class="submit-form-wrap">
-      <!-- Tier Selection -->
-      <div class="form-card">
-        <h2 class="form-card-title">Choose Your Plan</h2>
-        <p class="form-card-sub">
-          You won't be charged until your listing is approved.
-        </p>
-
-        <div class="billing-toggle-wrap">
-          <span class="billing-label" id="label-monthly">Monthly</span>
-          <button
-            class="billing-toggle"
-            id="billing-toggle"
-            aria-pressed="false"
-            type="button"
-          >
-            <span class="billing-toggle-thumb"></span>
-          </button>
-          <span class="billing-label" id="label-annual">
-            Annual <span class="billing-save-badge">Save ~17%</span>
-          </span>
-        </div>
-
-        <div class="tier-grid">
-          {
-            tiers.map((tier) => (
-              <label
-                class:list={["tier-card", tier.popular && "tier-card-popular"]}
-              >
-                <input
-                  type="radio"
-                  name="tier"
-                  value={tier.id}
-                  class="sr-only tier-radio"
-                  required
-                  checked={tier.popular}
-                />
-                {tier.popular && (
-                  <span class="tier-popular-badge">Most Popular</span>
-                )}
-                <div class="tier-name">{tier.name}</div>
-                <div class="tier-price">
-                  <span class="tier-price-monthly">
-                    <strong>${tier.monthly}</strong>/mo
-                  </span>
-                  <span class="tier-price-annual" style="display:none">
-                    <strong>${tier.annual}</strong>/yr
-                  </span>
-                </div>
-                <p class="tier-desc">{tier.description}</p>
-                <ul class="tier-features">
-                  {tier.features.map((f) => (
-                    <li>✓ {f}</li>
-                  ))}
-                </ul>
-              </label>
-            ))
-          }
-        </div>
-        <input
-          type="hidden"
-          id="billing-cycle-input"
-          name="billingCycle"
-          value="monthly"
-        />
-      </div>
-
       <!-- Business Info -->
       <div class="form-card">
         <h2 class="form-card-title">Business Information</h2>
@@ -463,12 +350,6 @@ const pricePoints = [
             </p>
           </div>
           <div class="submit-faq-item">
-            <p class="submit-faq-q">Can I upgrade later?</p>
-            <p class="submit-faq-a">
-              Yes — you can change your plan any time from your business portal.
-            </p>
-          </div>
-          <div class="submit-faq-item">
             <p class="submit-faq-q">What counts as independently owned?</p>
             <p class="submit-faq-a">
               Locally owned businesses — no national chains or franchises.
@@ -613,166 +494,6 @@ const pricePoints = [
     font-size: 0.75rem;
     color: var(--color-gem-text-subtle);
     margin-top: 0.25rem;
-  }
-
-  /* BILLING TOGGLE */
-  .billing-toggle-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .billing-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gem-text-muted);
-  }
-
-  .billing-toggle {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    background: var(--color-gem-border);
-    border-radius: 100px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-    padding: 0;
-    flex-shrink: 0;
-  }
-
-  .billing-toggle.active {
-    background: var(--color-gem-gold);
-  }
-
-  .billing-toggle-thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
-    display: block;
-  }
-
-  .billing-toggle.active .billing-toggle-thumb {
-    transform: translateX(20px);
-  }
-
-  .billing-save-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.1rem 0.5rem;
-    background: rgba(201, 168, 76, 0.1);
-    border: 1px solid rgba(201, 168, 76, 0.25);
-    border-radius: 100px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--color-gem-gold);
-    margin-left: 0.375rem;
-  }
-
-  /* TIER CARDS */
-  .tier-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-
-  @media (max-width: 768px) {
-    .tier-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .tier-card {
-    position: relative;
-    border: 1.5px solid var(--color-gem-border);
-    border-radius: 10px;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .tier-card:hover {
-    border-color: var(--color-gem-gold);
-  }
-
-  .tier-card:has(.tier-radio:checked) {
-    border-color: var(--color-gem-gold);
-    background: rgba(201, 168, 76, 0.04);
-    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
-  }
-
-  .tier-card-popular {
-    border-color: var(--color-gem-gold);
-  }
-
-  .tier-popular-badge {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-gem-gold);
-    color: var(--color-gem-dark);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.2rem 0.75rem;
-    border-radius: 100px;
-    white-space: nowrap;
-  }
-
-  .tier-name {
-    font-weight: 700;
-    font-size: 0.9375rem;
-    color: var(--color-gem-text);
-  }
-
-  .tier-price {
-    line-height: 1.2;
-  }
-  .tier-price strong {
-    font-family: var(--font-display);
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--color-gem-gold);
-  }
-  .tier-price span {
-    font-size: 0.8rem;
-    color: var(--color-gem-text-muted);
-  }
-
-  .tier-desc {
-    font-size: 0.8rem;
-    color: var(--color-gem-text-muted);
-    line-height: 1.5;
-  }
-
-  .tier-features {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
-  }
-
-  .tier-features li {
-    font-size: 0.8rem;
-    color: var(--color-gem-text-muted);
-  }
-  .tier-features li::first-letter {
-    color: var(--color-gem-gold);
-    font-weight: 700;
   }
 
   /* FORM INPUTS */
@@ -1011,27 +732,6 @@ const pricePoints = [
     });
   });
 
-  // Billing toggle
-  const toggle = document.getElementById("billing-toggle") as HTMLButtonElement;
-  const billingInput = document.getElementById(
-    "billing-cycle-input"
-  ) as HTMLInputElement;
-  const monthlyPrices = document.querySelectorAll(".tier-price-monthly");
-  const annualPrices = document.querySelectorAll(".tier-price-annual");
-
-  toggle?.addEventListener("click", () => {
-    const isAnnual = toggle.classList.toggle("active");
-    toggle.setAttribute("aria-pressed", String(isAnnual));
-    billingInput.value = isAnnual ? "annual" : "monthly";
-
-    monthlyPrices.forEach(
-      (el) => ((el as HTMLElement).style.display = isAnnual ? "none" : "")
-    );
-    annualPrices.forEach(
-      (el) => ((el as HTMLElement).style.display = isAnnual ? "" : "none")
-    );
-  });
-
   // Form submission
   const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
   const errorWrap = document.getElementById("submit-error") as HTMLDivElement;
@@ -1047,12 +747,6 @@ const pricePoints = [
     // Gather all form values
     const getValue = (id: string) =>
       (document.getElementById(id) as HTMLInputElement)?.value?.trim() ?? "";
-    const getCheckedRadio = (name: string) =>
-      (
-        document.querySelector(
-          `input[name="${name}"]:checked`
-        ) as HTMLInputElement
-      )?.value ?? "";
 
     const payload = {
       businessName: getValue("businessName"),
@@ -1068,8 +762,8 @@ const pricePoints = [
       neighborhood: getValue("neighborhood"),
       bio: getValue("bio"),
       pricePoint: getValue("pricePoint"),
-      tier: getCheckedRadio("tier"),
-      billingCycle: getValue("billing-cycle-input"),
+      tier: "PRO",
+      billingCycle: "monthly",
       ownerName: getValue("ownerName"),
       ownerEmail: getValue("ownerEmail"),
       notes: getValue("notes"),
@@ -1081,12 +775,10 @@ const pricePoints = [
       !payload.categoryId ||
       !payload.email ||
       !payload.ownerName ||
-      !payload.ownerEmail ||
-      !payload.tier
+      !payload.ownerEmail
     ) {
       errorWrap.classList.remove("hidden");
-      errorText.textContent =
-        "Please fill in all required fields and select a plan.";
+      errorText.textContent = "Please fill in all required fields.";
       errorClaim.classList.add("hidden");
       errorWrap.scrollIntoView({ behavior: "smooth", block: "center" });
 

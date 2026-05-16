@@ -1,13 +1,24 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { GET } from "./api/web/home";
+import { stripMarkdown } from "@/lib/markdown";
 
 const response = await GET(Astro);
 const {
   categories,
   trending,
   upcomingEvents: rawEvents,
+  featuredGem,
+  previousGems,
 } = await response.json();
+
+const featuredGemExcerpt = featuredGem
+  ? (featuredGem.shortDescription ?? stripMarkdown(featuredGem.writeup, 240))
+  : "";
+
+function gemPreview(gem: any, max = 140) {
+  return gem?.shortDescription ?? stripMarkdown(gem?.writeup, max);
+}
 
 const upcomingEvents = rawEvents.map((evt: any) => ({
   ...evt,
@@ -77,12 +88,14 @@ const priceMap: Record<string, string> = {
   THREE: "$$$",
   FOUR: "$$$$",
 };
+
+import boiseHero from "@/assets/images/boise-skyline.jpg";
 ---
 
 <PublicLayout>
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-bg"></div>
+    <div class="hero-bg" style={`background-image: url(${boiseHero.src})`}></div>
     <div class="hero-overlay"></div>
     <div class="hero-content">
       <p class="hero-eyebrow">Treasure Valley's Curated Directory</p>
@@ -177,6 +190,114 @@ const priceMap: Record<string, string> = {
       </div>
     </div>
   </section>
+
+  <!-- GEM OF THE WEEK -->
+  {
+    featuredGem && (
+      <section class="gemow-section">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-eyebrow">This Week's Spotlight</span>
+            <h2 class="section-title">
+              Gem of the <em>Week</em>
+            </h2>
+          </div>
+
+          <a href={`/gems/${featuredGem.id}`} class="gemow-featured">
+            <div class="gemow-featured-img">
+              {featuredGem.business.images?.[0] ? (
+                <img
+                  src={featuredGem.business.images[0].url}
+                  alt={featuredGem.business.name}
+                />
+              ) : (
+                <div class="gemow-placeholder">💎</div>
+              )}
+              <div class="gemow-featured-overlay">
+                <span class="gemow-badge">💎 {featuredGem.weekLabel}</span>
+              </div>
+            </div>
+            <div class="gemow-featured-body">
+              <h3 class="gemow-featured-headline">{featuredGem.headline}</h3>
+              <div class="gemow-featured-biz">
+                <span class="gemow-biz-name">{featuredGem.business.name}</span>
+                {featuredGem.business.category && (
+                  <span class="gemow-biz-cat">
+                    · {featuredGem.business.category.name}
+                  </span>
+                )}
+              </div>
+              <p class="gemow-featured-excerpt">{featuredGemExcerpt}</p>
+              <span class="gemow-read-more">Read the full feature →</span>
+            </div>
+          </a>
+
+          {previousGems && previousGems.length > 0 && (
+            <div class="gemow-archive">
+              <div class="gemow-archive-header">
+                <h3 class="gemow-archive-title">Previous Gems</h3>
+                <a href="/gems" class="gemow-archive-link">
+                  View all →
+                </a>
+              </div>
+              <div class="carousel-wrapper">
+                <button
+                  class="carousel-btn prev"
+                  id="gemow-prev"
+                  aria-label="Previous"
+                >
+                  ←
+                </button>
+                <div class="embla" id="gemow-carousel">
+                  <div class="embla__container">
+                    {previousGems.map((gem: any) => (
+                      <div class="embla__slide gemow-slide">
+                        <a href={`/gems/${gem.id}`} class="gemow-card">
+                          <div class="gemow-card-img">
+                            {gem.business.images?.[0] ? (
+                              <img
+                                src={gem.business.images[0].url}
+                                alt={gem.business.name}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div class="gemow-placeholder small">💎</div>
+                            )}
+                          </div>
+                          <div class="gemow-card-body">
+                            <span class="gemow-week-label">{gem.weekLabel}</span>
+                            <h4 class="gemow-card-headline">{gem.headline}</h4>
+                            <div class="gemow-card-biz">
+                              <span class="gemow-biz-name">{gem.business.name}</span>
+                              {gem.business.category && (
+                                <span class="gemow-biz-cat">
+                                  · {gem.business.category.name}
+                                </span>
+                              )}
+                            </div>
+                            {gemPreview(gem) && (
+                              <p class="gemow-card-excerpt">{gemPreview(gem)}</p>
+                            )}
+                          </div>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  class="carousel-btn next"
+                  id="gemow-next"
+                  aria-label="Next"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
 
   <!-- TRENDING BUSINESSES -->
   <section class="carousel-section">
@@ -449,8 +570,8 @@ const priceMap: Record<string, string> = {
           <p class="section-eyebrow">Get In Touch</p>
           <h2 class="contact-lead">We'd love to <em>hear from you.</em></h2>
           <p class="contact-sub">
-            Whether you have a question, want to suggest a business, or just
-            want to say hello — drop us a message and we'll get back to you.
+            Have a question, want to get your business listed, or just want to
+            say hello — drop us a message and we'll get back to you.
           </p>
         </div>
         <form class="contact-form" id="contact-form">
@@ -545,6 +666,18 @@ const priceMap: Record<string, string> = {
         ?.addEventListener("click", () => evtApi.scrollNext());
     }
 
+    // Gem of the Week archive carousel
+    const gemowEl = document.getElementById("gemow-carousel");
+    if (gemowEl) {
+      const gemowApi = EmblaCarousel(gemowEl, { loop: false, align: "start" });
+      document
+        .getElementById("gemow-prev")
+        ?.addEventListener("click", () => gemowApi.scrollPrev());
+      document
+        .getElementById("gemow-next")
+        ?.addEventListener("click", () => gemowApi.scrollNext());
+    }
+
     // FAQs
     document.querySelectorAll(".faq-trigger").forEach((trigger) => {
       trigger.addEventListener("click", () => {
@@ -557,12 +690,44 @@ const priceMap: Record<string, string> = {
       });
     });
 
-    // Contact form placeholder
-    document.getElementById("contact-form")?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      alert("Thanks for reaching out! We'll get back to you soon.");
-      (e.target as HTMLFormElement).reset();
-    });
+    // Contact form
+    document
+      .getElementById("contact-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const submit = form.querySelector(
+          'button[type="submit"]',
+        ) as HTMLButtonElement | null;
+        const originalLabel = submit?.textContent ?? "";
+        if (submit) {
+          submit.disabled = true;
+          submit.textContent = "Sending…";
+        }
+
+        try {
+          const payload = Object.fromEntries(new FormData(form));
+          const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            form.reset();
+            alert("Thanks for reaching out! We'll get back to you soon.");
+          } else {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error ?? "Something went wrong. Please try again.");
+          }
+        } catch {
+          alert("Something went wrong. Please try again.");
+        } finally {
+          if (submit) {
+            submit.disabled = false;
+            submit.textContent = originalLabel;
+          }
+        }
+      });
   </script>
   <style>
     /* HERO */
@@ -578,7 +743,6 @@ const priceMap: Record<string, string> = {
     .hero-bg {
       position: absolute;
       inset: 0;
-      background-image: url("https://images.unsplash.com/photo-1599946347371-68eb71b16afc?w=1800&auto=format&fit=crop&q=80");
       background-size: cover;
       background-position: center 30%;
       transform: scale(1.05);
@@ -1145,6 +1309,251 @@ const priceMap: Record<string, string> = {
       .form-row {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* GEM OF THE WEEK */
+    .gemow-section {
+      background: linear-gradient(180deg, var(--color-gem-mist) 0%, white 100%);
+      padding: 5rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .gemow-section::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(
+        circle,
+        rgba(201, 168, 76, 0.12) 0%,
+        transparent 70%
+      );
+      pointer-events: none;
+    }
+
+    .gemow-featured {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      background: white;
+      border-radius: 16px;
+      border: 1.5px solid var(--color-gem-border);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    }
+    .gemow-featured:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.1);
+    }
+    @media (max-width: 768px) {
+      .gemow-featured {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .gemow-featured-img {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: var(--color-gem-dark);
+    }
+    .gemow-featured-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .gemow-featured:hover .gemow-featured-img img {
+      transform: scale(1.03);
+    }
+    .gemow-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      color: var(--color-gem-gold);
+    }
+    .gemow-placeholder.small {
+      font-size: 2.5rem;
+    }
+
+    .gemow-featured-overlay {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+    }
+    .gemow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .gemow-featured-body {
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+      justify-content: center;
+    }
+    .gemow-featured-headline {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+      font-weight: 600;
+      line-height: 1.15;
+      margin: 0;
+    }
+    .gemow-featured-biz {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .gemow-biz-name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+    .gemow-biz-cat {
+      font-size: 0.8125rem;
+      color: var(--color-gem-text-muted);
+    }
+    .gemow-featured-excerpt {
+      font-size: 0.9375rem;
+      color: var(--color-gem-text-muted);
+      line-height: 1.7;
+      margin: 0;
+    }
+    .gemow-read-more {
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--color-gem-gold);
+      margin-top: 0.25rem;
+    }
+
+    /* ARCHIVE CAROUSEL */
+    .gemow-archive {
+      margin-top: 3rem;
+    }
+    .gemow-archive-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .gemow-archive-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .gemow-archive-link {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-gem-gold);
+      text-decoration: none;
+    }
+    .gemow-archive-link:hover {
+      text-decoration: underline;
+    }
+
+    .gemow-slide {
+      flex: 0 0 320px;
+      min-width: 0;
+      padding-right: 1rem;
+    }
+    @media (max-width: 640px) {
+      .gemow-slide {
+        flex-basis: 80%;
+      }
+    }
+
+    .gemow-card {
+      display: block;
+      background: white;
+      border-radius: 12px;
+      border: 1.5px solid var(--color-gem-border);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      height: 100%;
+      transition:
+        transform 0.2s,
+        box-shadow 0.2s,
+        border-color 0.2s;
+    }
+    .gemow-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--color-gem-gold);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+    .gemow-card-img {
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: var(--color-gem-mist-2, var(--color-gem-mist));
+    }
+    .gemow-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .gemow-card:hover .gemow-card-img img {
+      transform: scale(1.04);
+    }
+    .gemow-card-body {
+      padding: 1.1rem 1.25rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .gemow-week-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-gem-gold);
+    }
+    .gemow-card-headline {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.3;
+      margin: 0;
+    }
+    .gemow-card-biz {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      color: var(--color-gem-text-muted);
+    }
+    .gemow-card-excerpt {
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--color-gem-text-muted);
+      margin: 0.35rem 0 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
   </style>
 </PublicLayout>

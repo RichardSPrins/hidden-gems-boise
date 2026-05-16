@@ -59,14 +59,13 @@ const navItems = [
       <!-- User menu -->
       <div class="flex items-center gap-4">
         <span class="text-sm text-white/50 hidden sm:block">{user?.email}</span>
-        <form method="POST" action="/api/auth/sign-out">
-          <button
-            type="submit"
-            class="text-sm text-white/50 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-          >
-            Sign Out
-          </button>
-        </form>
+        <button
+          type="button"
+          data-sign-out
+          class="text-sm text-white/50 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+        >
+          Sign Out
+        </button>
       </div>
     </div>
   </header>
@@ -155,5 +154,20 @@ const navItems = [
     </main>
   </div>
 
+  <script is:inline>
+    document.querySelectorAll("[data-sign-out]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.setAttribute("disabled", "true");
+        try {
+          await fetch("/api/auth/sign-out", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+        } catch {}
+        window.location.href = "/";
+      });
+    });
+  </script>
   <slot name="scripts" slot="scripts" />
 </BaseLayout>

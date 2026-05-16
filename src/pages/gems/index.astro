@@ -4,6 +4,11 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import { db } from "@/lib/db";
 import { gemSpotlight, business, image } from "@/lib/db/schema";
 import { eq, desc, isNotNull } from "drizzle-orm";
+import { stripMarkdown } from "@/lib/markdown";
+
+function gemPreview(gem: any, max = 200) {
+  return gem?.shortDescription ?? stripMarkdown(gem?.writeup, max);
+}
 
 const spotlights = await db.query.gemSpotlight.findMany({
   where: isNotNull(gemSpotlight.publishedAt),
@@ -71,9 +76,7 @@ function formatWeek(dateStr: string | Date) {
               <span class="gem-biz-cat">{spotlights[0].business.category?.name}</span>
             </div>
             <p class="gem-featured-writeup">
-              {spotlights[0].writeup.length > 200
-                ? spotlights[0].writeup.slice(0, 197) + "…"
-                : spotlights[0].writeup}
+              {gemPreview(spotlights[0], 240)}
             </p>
             <span class="gem-read-more">Read the full feature →</span>
           </div>
@@ -106,6 +109,9 @@ function formatWeek(dateStr: string | Date) {
                         <span class="gem-biz-cat">· {spotlight.business.category.name}</span>
                       )}
                     </div>
+                    {gemPreview(spotlight, 160) && (
+                      <p class="gem-card-excerpt">{gemPreview(spotlight, 160)}</p>
+                    )}
                   </div>
                 </a>
               ))}
@@ -227,6 +233,16 @@ function formatWeek(dateStr: string | Date) {
   .gem-card-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; }
   .gem-card-headline { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; line-height: 1.3; margin: 0; }
   .gem-card-biz { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8rem; color: var(--color-gem-text-muted); }
+  .gem-card-excerpt {
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--color-gem-text-muted);
+    margin: 0.4rem 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
   /* EMPTY */
   .gems-empty { text-align: center; padding: 5rem 2rem; }

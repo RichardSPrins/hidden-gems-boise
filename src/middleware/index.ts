@@ -14,5 +14,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.session = null;
   }
 
+  const path = context.url.pathname;
+  const role = (context.locals.user as { role?: string } | null)?.role;
+
+  if (path.startsWith("/admin")) {
+    if (!context.locals.user) {
+      return context.redirect(`/auth/login?next=${encodeURIComponent(path)}`);
+    }
+    if (role !== "ADMIN") {
+      return context.redirect("/portal");
+    }
+  }
+
+  if (path.startsWith("/portal")) {
+    if (!context.locals.user) {
+      return context.redirect(`/auth/login?next=${encodeURIComponent(path)}`);
+    }
+  }
+
   return next();
 });

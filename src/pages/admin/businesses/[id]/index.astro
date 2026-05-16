@@ -1,0 +1,231 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import {
+  business,
+  category,
+  subcategory,
+  review,
+  event,
+} from "@/lib/db/schema";
+import { eq, and, count, asc, desc } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/businesses");
+
+const biz = await db.query.business.findFirst({
+  where: eq(business.id, id),
+  with: {
+    category: true,
+    subcategory: true,
+    locations: { with: { hours: true }, orderBy: desc(business.createdAt) },
+    contact: true,
+    socials: true,
+    images: true,
+  },
+});
+
+if (!biz) return Astro.redirect("/admin/businesses");
+
+const [[{ pendingReviewsCount }], [{ eventsCount }]] = await Promise.all([
+  db
+    .select({ pendingReviewsCount: count() })
+    .from(review)
+    .where(and(eq(review.businessId, id), eq(review.isApproved, false))),
+  db.select({ eventsCount: count() }).from(event).where(eq(event.businessId, id)),
+]);
+
+const categories = await db.query.category.findMany({
+  orderBy: asc(category.name),
+  with: { subcategories: { orderBy: asc(subcategory.name) } },
+});
+---
+
+<AdminLayout title={biz.name} activeSection="businesses">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/businesses" class="hover:text-gem-gold">Businesses</a>
+      <span class="mx-2">/</span>
+      <span>{biz.name}</span>
+    </nav>
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="font-display text-3xl text-gem-text">{biz.name}</h1>
+        <p class="text-gem-text-muted text-sm mt-1">
+          /{biz.slug} · {biz.category?.name}{biz.subcategory ? ` › ${biz.subcategory.name}` : ""}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href={`/listings/${biz.slug}`} target="_blank" rel="noopener" class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-gem-mist no-underline">View on site ↗</a>
+        <a href={`/admin/businesses/${biz.id}/reviews`} class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-gem-mist no-underline">
+          Reviews{pendingReviewsCount > 0 ? ` (${pendingReviewsCount})` : ""}
+        </a>
+        <a href={`/admin/businesses/${biz.id}/events`} class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-gem-mist no-underline">
+          Events{eventsCount > 0 ? ` (${eventsCount})` : ""}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form id="edit-form" class="space-y-6 max-w-3xl" data-id={biz.id}>
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Edit details</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Name</label>
+        <input name="name" type="text" value={biz.name} required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Category</label>
+          <select name="categoryId" id="categoryId" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            {categories.map((c) => (
+              <option value={c.id} selected={c.id === biz.categoryId}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Subcategory</label>
+          <select name="subcategoryId" id="subcategoryId" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            <option value="">—</option>
+            {categories.find((c) => c.id === biz.categoryId)?.subcategories.map((s) => (
+              <option value={s.id} selected={s.id === biz.subcategoryId}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Bio</label>
+        <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">{biz.bio ?? ""}</textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Website</label>
+          <input name="websiteUrl" type="url" value={biz.websiteUrl ?? ""} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Booking URL</label>
+          <input name="bookingUrl" type="url" value={biz.bookingUrl ?? ""} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Price point</label>
+          <select name="pricePoint" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            {["", "ONE", "TWO", "THREE", "FOUR"].map((p) => (
+              <option value={p} selected={(biz.pricePoint ?? "") === p}>
+                {p === "ONE" ? "$" : p === "TWO" ? "$$" : p === "THREE" ? "$$$" : p === "FOUR" ? "$$$$" : "—"}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Status</label>
+          <select name="status" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            {["APPROVED", "DRAFT", "PENDING_REVIEW", "REJECTED", "SUSPENDED"].map((s) => (
+              <option value={s} selected={biz.status === s}>{s.replace("_", " ")}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="isVerified" value="1" checked={biz.isVerified} />
+        Verified Gem
+      </label>
+    </section>
+
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Contact</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Phone</label>
+          <input name="phone" type="tel" value={biz.contact?.phone ?? ""} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Public email</label>
+          <input name="email" type="email" value={biz.contact?.email ?? ""} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50">
+        Save changes
+      </button>
+      <button type="button" id="delete-btn" class="text-sm text-red-600 hover:underline">Delete listing</button>
+      <p id="form-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <script is:inline define:vars={{ categories, businessId: biz.id, currentSubId: biz.subcategoryId }}>
+    const catSel = document.getElementById("categoryId");
+    const subSel = document.getElementById("subcategoryId");
+    const byId = Object.fromEntries(categories.map((c) => [c.id, c.subcategories]));
+
+    catSel.addEventListener("change", () => {
+      const subs = byId[catSel.value] || [];
+      subSel.innerHTML =
+        '<option value="">—</option>' +
+        subs.map((s) => `<option value="${s.id}"${s.id === currentSubId ? " selected" : ""}>${s.name}</option>`).join("");
+    });
+
+    const form = document.getElementById("edit-form");
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("form-msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      msg.classList.add("hidden");
+
+      const fd = new FormData(form);
+      const payload = {
+        name: fd.get("name"),
+        bio: fd.get("bio") || null,
+        websiteUrl: fd.get("websiteUrl") || null,
+        bookingUrl: fd.get("bookingUrl") || null,
+        categoryId: fd.get("categoryId"),
+        subcategoryId: fd.get("subcategoryId") || null,
+        pricePoint: fd.get("pricePoint") || null,
+        status: fd.get("status"),
+        isVerified: fd.get("isVerified") === "1",
+        contact: {
+          phone: fd.get("phone") || null,
+          email: fd.get("email") || null,
+        },
+      };
+
+      try {
+        const res = await fetch(`/api/admin/businesses/${businessId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error();
+        msg.textContent = "Saved.";
+        msg.className = "text-sm text-green-600 ml-auto";
+        msg.classList.remove("hidden");
+      } catch {
+        msg.textContent = "Save failed.";
+        msg.className = "text-sm text-red-600 ml-auto";
+        msg.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save changes";
+      }
+    });
+
+    document.getElementById("delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this listing? This cannot be undone.")) return;
+      const res = await fetch(`/api/admin/businesses/${businessId}`, { method: "DELETE" });
+      if (res.ok) window.location.href = "/admin/businesses";
+      else alert("Delete failed.");
+    });
+  </script>
+</AdminLayout>

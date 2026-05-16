@@ -30,14 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
     } = body;
 
     // Required field validation
-    if (
-      !businessName ||
-      !categoryId ||
-      !email ||
-      !ownerName ||
-      !ownerEmail ||
-      !tier
-    ) {
+    if (!businessName || !categoryId || !email || !ownerName || !ownerEmail) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -93,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
       neighborhood: neighborhood || null,
       bio: bio || null,
       pricePoint: pricePoint || null,
-      tier,
+      tier: tier || "PRO",
       billingCycle: billingCycle || "monthly",
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim(),

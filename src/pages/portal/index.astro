@@ -1,0 +1,25 @@
+---
+import PortalLayout from "@/layouts/PortalLayout.astro";
+
+const user = Astro.locals.user;
+---
+
+<PortalLayout title="Business Portal">
+  <div slot="page-header" class="mb-6">
+    <h1 class="font-display text-3xl text-gem-text">Welcome{user?.name ? `, ${user.name}` : ""}</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Manage the listings you've claimed on Hidden Gems.
+    </p>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl p-8 max-w-2xl">
+    <h2 class="font-display text-xl text-gem-text mb-2">The business portal is coming soon</h2>
+    <p class="text-sm text-gem-text-muted mb-4">
+      We're focused on building the directory itself first. The portal — where you'll manage your claimed listings, hours, photos, and events — is in active development.
+    </p>
+    <p class="text-sm text-gem-text-muted">
+      In the meantime, if you've submitted a listing or claim, the team is reviewing it manually.
+      Email <a href="mailto:hello@hiddengemsboise.com" class="text-gem-gold hover:underline">hello@hiddengemsboise.com</a> with any questions.
+    </p>
+  </div>
+</PortalLayout>

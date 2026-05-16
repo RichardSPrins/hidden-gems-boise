@@ -1,0 +1,104 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+if (Astro.locals.user) {
+  const role = (Astro.locals.user as { role?: string }).role;
+  return Astro.redirect(role === "ADMIN" ? "/admin" : "/portal");
+}
+
+const next = Astro.url.searchParams.get("next") ?? "";
+---
+
+<BaseLayout title="Sign In" noindex={true} nofollow={true}>
+  <div class="min-h-screen flex items-center justify-center bg-gem-mist px-4">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <a href="/" class="font-display text-2xl font-semibold text-gem-text no-underline">
+          Hidden <span class="text-gem-gold">Gems</span>
+        </a>
+        <h1 class="font-display text-3xl mt-6 mb-2">Sign in</h1>
+        <p class="text-gem-text-muted text-sm">
+          Don't have an account?
+          <a href={`/auth/sign-up${next ? `?next=${encodeURIComponent(next)}` : ""}`} class="text-gem-gold hover:underline">Sign up</a>
+        </p>
+      </div>
+
+      <form id="login-form" class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 shadow-sm">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gem-text mb-1.5">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            class="w-full px-3 py-2.5 rounded-lg border border-gem-border bg-white text-gem-text focus:outline-none focus:ring-2 focus:ring-gem-gold focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-gem-text mb-1.5">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autocomplete="current-password"
+            class="w-full px-3 py-2.5 rounded-lg border border-gem-border bg-white text-gem-text focus:outline-none focus:ring-2 focus:ring-gem-gold focus:border-transparent"
+          />
+        </div>
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full bg-gem-gold text-gem-dark font-semibold py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50"
+        >
+          Sign in
+        </button>
+        <p id="form-error" class="text-sm text-red-600 hidden" role="alert"></p>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ next }}>
+    const form = document.getElementById("login-form");
+    const errEl = document.getElementById("form-error");
+    const btn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+
+      const fd = new FormData(form);
+      try {
+        const res = await fetch("/api/auth/sign-in/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: fd.get("email"),
+            password: fd.get("password"),
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          errEl.textContent = data?.message || "Invalid email or password.";
+          errEl.classList.remove("hidden");
+          btn.disabled = false;
+          btn.textContent = "Sign in";
+          return;
+        }
+
+        const data = await res.json();
+        const role = data?.user?.role;
+        const target = next || (role === "ADMIN" ? "/admin" : "/portal");
+        window.location.href = target;
+      } catch (err) {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+      }
+    });
+  </script>
+</BaseLayout>

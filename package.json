@@ -29,6 +29,8 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "embla-carousel": "^8.6.0",
+    "isomorphic-dompurify": "^3.13.0",
+    "marked": "^18.0.3",
     "pg": "^8.20.0",
     "resend": "^6.12.2",
     "schema-dts": "^2.0.0",

@@ -1,0 +1,22 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+
+// Note: Astro param collision — inner [id] shadows outer [id].
+// This stub doesn't try to disambiguate; full event-detail UI is deferred.
+---
+
+<AdminLayout title="Event detail" activeSection="businesses">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/businesses" class="hover:text-gem-gold">Businesses</a>
+      <span class="mx-2">/</span>
+      <span>Event</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Event detail</h1>
+    <p class="text-gem-text-muted text-sm mt-1">Per-event admin UI is on the roadmap — this stub keeps the route alive.</p>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl p-6">
+    <p class="text-sm text-gem-text-muted">For now, manage events via the database directly or build out this page when event volume warrants it.</p>
+  </div>
+</AdminLayout>

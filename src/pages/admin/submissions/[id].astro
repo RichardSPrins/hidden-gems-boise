@@ -1,0 +1,134 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { publicSubmission, category, subcategory } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/submissions");
+
+const sub = await db.query.publicSubmission.findFirst({
+  where: eq(publicSubmission.id, id),
+});
+if (!sub) return Astro.redirect("/admin/submissions");
+
+const cat = sub.categoryId
+  ? await db.query.category.findFirst({
+      where: eq(category.id, sub.categoryId),
+      with: { subcategories: { orderBy: asc(subcategory.name) } },
+    })
+  : null;
+
+const subCat = sub.subcategoryId
+  ? await db.query.subcategory.findFirst({ where: eq(subcategory.id, sub.subcategoryId) })
+  : null;
+
+const fields: [string, string][] = [
+  ["Business name", sub.businessName],
+  ["Category", cat?.name ?? "—"],
+  ["Subcategory", subCat?.name ?? "—"],
+  ["Website", sub.website ?? "—"],
+  ["Phone", sub.phone ?? "—"],
+  ["Public email", sub.email ?? "—"],
+  ["Address", sub.address ?? "—"],
+  ["City", sub.city ?? "—"],
+  ["State", sub.state ?? "—"],
+  ["ZIP", sub.zip ?? "—"],
+  ["Neighborhood", sub.neighborhood ?? "—"],
+  ["Price point", sub.pricePoint ?? "—"],
+  ["Tier", sub.tier],
+  ["Billing", sub.billingCycle],
+  ["Owner name", sub.ownerName],
+  ["Owner email", sub.ownerEmail],
+  ["Notes", sub.notes ?? "—"],
+];
+
+const canApprove = sub.status === "PENDING" && Boolean(sub.categoryId);
+const isPending = sub.status === "PENDING";
+---
+
+<AdminLayout title={`Submission · ${sub.businessName}`} activeSection="submissions">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/submissions" class="hover:text-gem-gold">Submissions</a>
+      <span class="mx-2">/</span>
+      <span>{sub.businessName}</span>
+    </nav>
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h1 class="font-display text-3xl text-gem-text">{sub.businessName}</h1>
+        <p class="text-gem-text-muted text-sm mt-1">
+          Submitted {new Date(sub.createdAt).toLocaleDateString()} ·
+          <span class:list={[
+            "inline-block px-2 py-0.5 rounded-full text-xs font-medium ml-1",
+            sub.status === "PENDING" && "bg-yellow-100 text-yellow-800",
+            sub.status === "APPROVED" && "bg-green-100 text-green-700",
+            sub.status === "REJECTED" && "bg-red-100 text-red-700",
+          ]}>{sub.status}</span>
+        </p>
+      </div>
+      {isPending && (
+        <div class="flex items-center gap-2">
+          <button id="approve-btn" disabled={!canApprove} title={canApprove ? "" : "Submission has no category — cannot auto-approve"} class="bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50">
+            Approve → Create listing
+          </button>
+          <button id="reject-btn" class="text-sm text-red-600 px-3 py-2 hover:underline">Reject</button>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl p-6 max-w-3xl">
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      {fields.map(([label, value]) => (
+        <div>
+          <dt class="text-xs uppercase tracking-widest text-gem-text-subtle">{label}</dt>
+          <dd class="text-gem-text mt-0.5 whitespace-pre-wrap">{value}</dd>
+        </div>
+      ))}
+    </dl>
+    {sub.bio && (
+      <div class="mt-6 pt-6 border-t border-gem-border">
+        <p class="text-xs uppercase tracking-widest text-gem-text-subtle mb-1">Bio</p>
+        <p class="text-sm text-gem-text whitespace-pre-wrap">{sub.bio}</p>
+      </div>
+    )}
+  </div>
+
+  <p id="action-msg" class="text-sm hidden mt-4" role="status"></p>
+
+  <script is:inline define:vars={{ submissionId: id }}>
+    const msg = document.getElementById("action-msg");
+    const approve = document.getElementById("approve-btn");
+    const reject = document.getElementById("reject-btn");
+
+    async function action(name, btn) {
+      btn.disabled = true;
+      msg.classList.add("hidden");
+      const res = await fetch(`/api/admin/submissions/${submissionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.businessId) {
+          window.location.href = `/admin/businesses/${data.businessId}`;
+        } else {
+          window.location.reload();
+        }
+      } else {
+        msg.textContent = data.error || "Action failed.";
+        msg.className = "text-sm text-red-600 mt-4";
+        msg.classList.remove("hidden");
+        btn.disabled = false;
+      }
+    }
+
+    approve?.addEventListener("click", () => action("approve", approve));
+    reject?.addEventListener("click", () => {
+      if (!confirm("Reject this submission?")) return;
+      action("reject", reject);
+    });
+  </script>
+</AdminLayout>

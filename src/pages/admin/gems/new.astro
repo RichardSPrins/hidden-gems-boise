@@ -1,0 +1,115 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { business } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
+
+const businesses = await db.query.business.findMany({
+  where: eq(business.status, "APPROVED"),
+  orderBy: asc(business.name),
+  columns: { id: true, name: true },
+  limit: 500,
+});
+---
+
+<AdminLayout title="New Spotlight" activeSection="gems">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/gems" class="hover:text-gem-gold">Spotlights</a>
+      <span class="mx-2">/</span>
+      <span>New</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">New gem spotlight</h1>
+    <p class="text-gem-text-muted text-sm mt-1">A spotlight is the editorial write-up that fronts the "Gems" page.</p>
+  </div>
+
+  <form id="gem-form" class="space-y-6 max-w-2xl">
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Business <span class="text-red-500">*</span></label>
+        <select name="businessId" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+          <option value="">Select…</option>
+          {businesses.map((b) => <option value={b.id}>{b.name}</option>)}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Headline <span class="text-red-500">*</span></label>
+        <input name="headline" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="The Taproom That Built Boise's Beer Scene" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Week label <span class="text-red-500">*</span></label>
+        <input name="weekLabel" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="Week of May 8, 2026" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Short description</label>
+        <textarea name="shortDescription" rows="2" maxlength="240" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="One- or two-sentence teaser used on cards and previews."></textarea>
+        <p class="text-xs text-gem-text-muted mt-1">Plain text. Shown on the home page card and the Gems list — keep it tight.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Write-up <span class="text-red-500">*</span></label>
+        <textarea name="writeup" rows="10" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="The story you'll tell about this place. Markdown supported."></textarea>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="publish" value="1" />
+        Publish immediately (and mark business as Gem of the Week)
+      </label>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light disabled:opacity-50">Save spotlight</button>
+      <a href="/admin/gems" class="text-sm text-gem-text-muted hover:text-gem-text">Cancel</a>
+      <p id="form-error" class="text-sm text-red-600 hidden ml-auto" role="alert"></p>
+    </div>
+  </form>
+
+  <script is:inline>
+    const form = document.getElementById("gem-form");
+    const btn = document.getElementById("submit-btn");
+    const errEl = document.getElementById("form-error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      errEl.classList.add("hidden");
+
+      const fd = new FormData(form);
+      const payload = {
+        businessId: fd.get("businessId"),
+        headline: fd.get("headline"),
+        shortDescription: fd.get("shortDescription"),
+        writeup: fd.get("writeup"),
+        weekLabel: fd.get("weekLabel"),
+        publish: fd.get("publish") === "1",
+      };
+
+      try {
+        const res = await fetch("/api/admin/gems", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          errEl.textContent = data.error || "Could not save.";
+          errEl.classList.remove("hidden");
+          btn.disabled = false;
+          btn.textContent = "Save spotlight";
+          return;
+        }
+        const data = await res.json();
+        window.location.href = `/admin/gems/${data.id}`;
+      } catch {
+        errEl.textContent = "Network error.";
+        errEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Save spotlight";
+      }
+    });
+  </script>
+</AdminLayout>

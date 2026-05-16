@@ -4,8 +4,9 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import { db } from "@/lib/db";
 import { gemSpotlight, image, location } from "@/lib/db/schema";
 import { eq, desc, isNotNull, ne } from "drizzle-orm";
+import { renderMarkdown, stripMarkdown } from "@/lib/markdown";
 
-const { id } = Astro.params;
+const { slug: id } = Astro.params;
 
 const spotlight = await db.query.gemSpotlight.findFirst({
   where: eq(gemSpotlight.id, id ?? ""),
@@ -62,11 +63,14 @@ function formatDate(date: Date | string) {
 const googleMapsUrl = primaryLocation
   ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${primaryLocation.address}, ${primaryLocation.city}`)}`
   : null;
+
+const writeupHtml = renderMarkdown(spotlight.writeup);
+const writeupExcerpt = spotlight.shortDescription ?? stripMarkdown(spotlight.writeup, 160);
 ---
 
 <PublicLayout
   title={`${spotlight.headline} — Hidden Gems Boise`}
-  description={spotlight.writeup.slice(0, 160)}
+  description={writeupExcerpt}
   image={primaryImage?.url}
 >
   <!-- HERO -->
@@ -106,7 +110,7 @@ const googleMapsUrl = primaryLocation
     <div class="gem-main">
       <!-- Writeup -->
       <div class="gem-section">
-        <p class="gem-writeup">{spotlight.writeup}</p>
+        <div class="gem-writeup" set:html={writeupHtml} />
       </div>
 
       <!-- Photos -->
@@ -164,15 +168,15 @@ const googleMapsUrl = primaryLocation
         </div>
       </div>
 
-      <!-- Share / Nominate -->
+      <!-- Get Listed CTA -->
       <div class="gem-section gem-nominate">
-        <h2 class="gem-section-title">Know a Hidden Gem?</h2>
+        <h2 class="gem-section-title">Want the Spotlight Next?</h2>
         <p class="gem-nominate-text">
-          Every week we spotlight one standout independently owned business in
-          the Treasure Valley. If you know a business that deserves the
-          spotlight, submit them — we'd love to feature them.
+          Every week we feature one standout independently owned business in
+          the Treasure Valley. Add your business to the directory and you'll
+          be in the running for an upcoming Gem of the Week.
         </p>
-        <a href="/submit" class="btn-gold">Submit a Business →</a>
+        <a href="/submit" class="btn-gold">List Your Business →</a>
       </div>
     </div>
 
@@ -398,6 +402,41 @@ const googleMapsUrl = primaryLocation
     line-height: 1.8;
     color: var(--color-gem-text);
   }
+  .gem-writeup > * + * { margin-top: 1rem; }
+  .gem-writeup h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-top: 2rem; }
+  .gem-writeup h3 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; }
+  .gem-writeup h4 { font-size: 1.0625rem; font-weight: 700; margin-top: 1.25rem; }
+  .gem-writeup p { margin: 0; }
+  .gem-writeup a { color: var(--color-gem-gold); text-decoration: underline; }
+  .gem-writeup a:hover { text-decoration: none; }
+  .gem-writeup ul, .gem-writeup ol { padding-left: 1.5rem; }
+  .gem-writeup ul { list-style: disc; }
+  .gem-writeup ol { list-style: decimal; }
+  .gem-writeup li + li { margin-top: 0.35rem; }
+  .gem-writeup blockquote {
+    border-left: 3px solid var(--color-gem-gold);
+    padding: 0.25rem 0 0.25rem 1rem;
+    color: var(--color-gem-text-muted);
+    font-style: italic;
+  }
+  .gem-writeup code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.92em;
+    background: var(--color-gem-mist);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  .gem-writeup pre {
+    background: var(--color-gem-dark);
+    color: white;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+  }
+  .gem-writeup pre code { background: transparent; padding: 0; color: inherit; }
+  .gem-writeup img { max-width: 100%; border-radius: 8px; }
+  .gem-writeup hr { border: 0; border-top: 1px solid var(--color-gem-border); margin: 1.5rem 0; }
 
   .gem-gallery {
     display: grid;

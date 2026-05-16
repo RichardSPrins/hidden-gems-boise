@@ -1,0 +1,137 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { gemSpotlight } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/gems");
+
+const spot = await db.query.gemSpotlight.findFirst({
+  where: eq(gemSpotlight.id, id),
+  with: { business: { columns: { id: true, name: true, slug: true } } },
+});
+if (!spot) return Astro.redirect("/admin/gems");
+---
+
+<AdminLayout title={spot.headline} activeSection="gems">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/gems" class="hover:text-gem-gold">Spotlights</a>
+      <span class="mx-2">/</span>
+      <span>{spot.business?.name}</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Edit spotlight</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      For <a href={`/admin/businesses/${spot.business?.id}`} class="text-gem-gold hover:underline">{spot.business?.name}</a>
+      {spot.publishedAt
+        ? ` · published ${new Date(spot.publishedAt).toLocaleDateString()}`
+        : " · draft"}
+    </p>
+  </div>
+
+  <form id="gem-form" class="space-y-6 max-w-2xl" data-id={spot.id}>
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Headline</label>
+        <input name="headline" type="text" required value={spot.headline} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Week label</label>
+        <input name="weekLabel" type="text" required value={spot.weekLabel} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Short description</label>
+        <textarea name="shortDescription" rows="2" maxlength="240" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="One- or two-sentence teaser used on cards and previews.">{spot.shortDescription ?? ""}</textarea>
+        <p class="text-xs text-gem-text-muted mt-1">Plain text. Shown on the home page card and the Gems list.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Write-up</label>
+        <textarea id="writeup-editor" name="writeup" rows="14" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">{spot.writeup}</textarea>
+        <p class="text-xs text-gem-text-muted mt-1">
+          Markdown supported — headings, lists, links, bold/italic, blockquotes, images.
+        </p>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="publish" value="1" checked={Boolean(spot.publishedAt)} />
+        Published
+      </label>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light disabled:opacity-50">Save</button>
+      <button type="button" id="delete-btn" class="text-sm text-red-600 hover:underline">Delete</button>
+      <p id="form-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <link rel="stylesheet" href="https://unpkg.com/easymde@2.18.0/dist/easymde.min.css" />
+  <script is:inline src="https://unpkg.com/easymde@2.18.0/dist/easymde.min.js"></script>
+
+  <script is:inline define:vars={{ gemId: spot.id }}>
+    const form = document.getElementById("gem-form");
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("form-msg");
+
+    const mde = new EasyMDE({
+      element: document.getElementById("writeup-editor"),
+      autoDownloadFontAwesome: true,
+      spellChecker: false,
+      status: ["lines", "words"],
+      minHeight: "320px",
+      toolbar: [
+        "bold", "italic", "heading", "|",
+        "quote", "unordered-list", "ordered-list", "|",
+        "link", "image", "|",
+        "preview", "side-by-side", "fullscreen", "|",
+        "guide",
+      ],
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      msg.classList.add("hidden");
+
+      const fd = new FormData(form);
+      const payload = {
+        headline: fd.get("headline"),
+        shortDescription: fd.get("shortDescription"),
+        writeup: mde.value(),
+        weekLabel: fd.get("weekLabel"),
+        publish: fd.get("publish") === "1",
+      };
+
+      try {
+        const res = await fetch(`/api/admin/gems/${gemId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error();
+        msg.textContent = "Saved.";
+        msg.className = "text-sm text-green-600 ml-auto";
+        msg.classList.remove("hidden");
+      } catch {
+        msg.textContent = "Save failed.";
+        msg.className = "text-sm text-red-600 ml-auto";
+        msg.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    });
+
+    document.getElementById("delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this spotlight?")) return;
+      const res = await fetch(`/api/admin/gems/${gemId}`, { method: "DELETE" });
+      if (res.ok) window.location.href = "/admin/gems";
+      else alert("Delete failed.");
+    });
+  </script>
+</AdminLayout>

@@ -380,6 +380,7 @@ export const gemSpotlight = pgTable("gem_spotlight", {
     .notNull()
     .references(() => business.id, { onDelete: "cascade" }),
   headline: text("headline").notNull(),
+  shortDescription: text("short_description"),
   writeup: text("writeup").notNull(),
   weekLabel: text("week_label").notNull(),
   publishedAt: timestamp("published_at"),
@@ -506,6 +507,18 @@ export const userRelations = relations(user, ({ many }) => ({
   businesses: many(business),
   sessions: many(session),
   accounts: many(account),
+}));
+
+// NOTE: relation key is `user` (singular) because Better Auth's core adapter
+// factory auto-detects FKs that point at `id` as one-to-one joins, and the
+// drizzle adapter then queries `with: { user: true }` (no plural suffix).
+// See @better-auth/core/db/adapter/factory.mjs `transformJoinClause`.
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
 }));
 
 export const categoryRelations = relations(category, ({ many }) => ({

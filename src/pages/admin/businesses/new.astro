@@ -1,0 +1,307 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { category, subcategory } from "@/lib/db/schema";
+import { asc } from "drizzle-orm";
+
+const categories = await db.query.category.findMany({
+  orderBy: asc(category.name),
+  with: { subcategories: { orderBy: asc(subcategory.name) } },
+});
+
+const socialPlatforms = [
+  "INSTAGRAM",
+  "FACEBOOK",
+  "TIKTOK",
+  "TWITTER",
+  "YOUTUBE",
+  "LINKEDIN",
+  "YELP",
+  "TRIPADVISOR",
+  "OTHER",
+];
+---
+
+<AdminLayout title="New Business" activeSection="businesses">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/businesses" class="hover:text-gem-gold">Businesses</a>
+      <span class="mx-2">/</span>
+      <span>New</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Add a new listing</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Required: name, category, primary location. Everything else can be edited after.
+    </p>
+  </div>
+
+  <form id="biz-form" class="space-y-6 max-w-3xl">
+    <!-- Core -->
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Identity</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Business name <span class="text-red-500">*</span></label>
+        <input name="name" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Slug</label>
+        <input name="slug" type="text" placeholder="auto-generated from name" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        <p class="text-xs text-gem-text-subtle mt-1">Leave blank to auto-generate. Will be made unique if there's a clash.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Category <span class="text-red-500">*</span></label>
+          <select name="categoryId" required id="categoryId" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            <option value="">Select…</option>
+            {categories.map((c) => (
+              <option value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Subcategory</label>
+          <select name="subcategoryId" id="subcategoryId" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            <option value="">— pick a category first —</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Bio</label>
+        <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="2–4 sentences. Why is this place a hidden gem?"></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Website</label>
+          <input name="websiteUrl" type="url" placeholder="https://…" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Booking URL</label>
+          <input name="bookingUrl" type="url" placeholder="https://…" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Price point</label>
+          <select name="pricePoint" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            <option value="">—</option>
+            <option value="ONE">$</option>
+            <option value="TWO">$$</option>
+            <option value="THREE">$$$</option>
+            <option value="FOUR">$$$$</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Status</label>
+          <select name="status" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">
+            <option value="APPROVED" selected>APPROVED (live)</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="PENDING_REVIEW">PENDING REVIEW</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Keywords</label>
+        <input name="keywords" type="text" placeholder="comma-separated, e.g. coffee, pour over, local roaster" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="isVerified" value="1" />
+        Mark as Verified Gem
+      </label>
+    </section>
+
+    <!-- Location -->
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Primary location</h2>
+      <p class="text-xs text-gem-text-subtle -mt-2">Required for the listing to render on the map / explore page.</p>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Street address <span class="text-red-500">*</span></label>
+        <input name="address" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">City <span class="text-red-500">*</span></label>
+          <input name="city" type="text" value="Boise" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">State</label>
+          <input name="state" type="text" value="ID" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">ZIP <span class="text-red-500">*</span></label>
+          <input name="zip" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Neighborhood</label>
+          <input name="neighborhood" type="text" placeholder="Downtown, North End, …" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Lat</label>
+          <input name="lat" type="number" step="any" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Lng</label>
+          <input name="lng" type="number" step="any" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact + Image -->
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Contact &amp; primary image</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Phone</label>
+          <input name="phone" type="tel" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Public email</label>
+          <input name="email" type="email" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Primary image URL</label>
+        <input name="imageUrl" type="url" placeholder="https://…" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        <p class="text-xs text-gem-text-subtle mt-1">URL only for now. File upload comes later.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Image alt text</label>
+        <input name="imageAlt" type="text" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+    </section>
+
+    <!-- Socials -->
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Social links</h2>
+      <div id="socials" class="space-y-2">
+        <div class="flex gap-2 social-row">
+          <select name="social-platform" class="px-3 py-2 rounded-lg border border-gem-border bg-white text-sm">
+            {socialPlatforms.map((p) => <option value={p}>{p}</option>)}
+          </select>
+          <input name="social-url" type="url" placeholder="https://…" class="flex-1 px-3 py-2 rounded-lg border border-gem-border" />
+        </div>
+      </div>
+      <button type="button" id="add-social" class="text-sm text-gem-gold hover:underline">+ add another</button>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50">
+        Save listing
+      </button>
+      <a href="/admin/businesses" class="text-sm text-gem-text-muted hover:text-gem-text">Cancel</a>
+      <p id="form-error" class="text-sm text-red-600 hidden ml-auto" role="alert"></p>
+    </div>
+  </form>
+
+  <script is:inline define:vars={{ categories }}>
+    // Subcategory cascade
+    const catSel = document.getElementById("categoryId");
+    const subSel = document.getElementById("subcategoryId");
+    const byId = Object.fromEntries(categories.map((c) => [c.id, c.subcategories]));
+    catSel.addEventListener("change", () => {
+      const subs = byId[catSel.value] || [];
+      subSel.innerHTML =
+        '<option value="">—</option>' +
+        subs.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+    });
+
+    // Add another social row
+    const socialPlatforms = [
+      "INSTAGRAM","FACEBOOK","TIKTOK","TWITTER","YOUTUBE","LINKEDIN","YELP","TRIPADVISOR","OTHER",
+    ];
+    document.getElementById("add-social").addEventListener("click", () => {
+      const row = document.createElement("div");
+      row.className = "flex gap-2 social-row";
+      row.innerHTML =
+        '<select name="social-platform" class="px-3 py-2 rounded-lg border border-gem-border bg-white text-sm">' +
+        socialPlatforms.map((p) => `<option value="${p}">${p}</option>`).join("") +
+        '</select>' +
+        '<input name="social-url" type="url" placeholder="https://…" class="flex-1 px-3 py-2 rounded-lg border border-gem-border" />';
+      document.getElementById("socials").appendChild(row);
+    });
+
+    // Submit
+    const form = document.getElementById("biz-form");
+    const btn = document.getElementById("submit-btn");
+    const errEl = document.getElementById("form-error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+
+      const fd = new FormData(form);
+      const keywords = (fd.get("keywords") || "").toString()
+        .split(",").map((k) => k.trim()).filter(Boolean);
+
+      const socials = Array.from(document.querySelectorAll(".social-row")).map((row) => ({
+        platform: row.querySelector('[name="social-platform"]').value,
+        url: row.querySelector('[name="social-url"]').value.trim(),
+      })).filter((s) => s.url);
+
+      const payload = {
+        name: fd.get("name"),
+        slug: fd.get("slug") || undefined,
+        categoryId: fd.get("categoryId"),
+        subcategoryId: fd.get("subcategoryId") || undefined,
+        bio: fd.get("bio") || undefined,
+        websiteUrl: fd.get("websiteUrl") || undefined,
+        bookingUrl: fd.get("bookingUrl") || undefined,
+        pricePoint: fd.get("pricePoint") || undefined,
+        status: fd.get("status") || "APPROVED",
+        keywords,
+        isVerified: fd.get("isVerified") === "1",
+        location: {
+          address: fd.get("address"),
+          city: fd.get("city"),
+          state: fd.get("state") || "ID",
+          zip: fd.get("zip"),
+          neighborhood: fd.get("neighborhood") || undefined,
+          lat: fd.get("lat") ? Number(fd.get("lat")) : undefined,
+          lng: fd.get("lng") ? Number(fd.get("lng")) : undefined,
+        },
+        phone: fd.get("phone") || undefined,
+        email: fd.get("email") || undefined,
+        imageUrl: fd.get("imageUrl") || undefined,
+        imageAlt: fd.get("imageAlt") || undefined,
+        socials,
+      };
+
+      try {
+        const res = await fetch("/api/admin/businesses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          errEl.textContent = data?.error || "Could not save listing.";
+          errEl.classList.remove("hidden");
+          btn.disabled = false;
+          btn.textContent = "Save listing";
+          return;
+        }
+        const data = await res.json();
+        window.location.href = `/admin/businesses/${data.id}`;
+      } catch {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Save listing";
+      }
+    });
+  </script>
+</AdminLayout>

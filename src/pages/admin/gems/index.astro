@@ -1,0 +1,58 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { gemSpotlight } from "@/lib/db/schema";
+import { desc } from "drizzle-orm";
+
+const rows = await db.query.gemSpotlight.findMany({
+  with: { business: { columns: { id: true, name: true, slug: true } } },
+  orderBy: desc(gemSpotlight.createdAt),
+  limit: 100,
+});
+---
+
+<AdminLayout title="Gem Spotlights" activeSection="gems">
+  <div slot="page-header" class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-display text-3xl text-gem-text">Gem Spotlights</h1>
+      <p class="text-gem-text-muted text-sm mt-1">{rows.length} total · feed the "Gems" page on the public site.</p>
+    </div>
+    <a href="/admin/gems/new" class="bg-gem-gold text-gem-dark font-semibold px-4 py-2 rounded-lg hover:bg-gem-gold-light no-underline">+ New Spotlight</a>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl overflow-hidden">
+    {rows.length === 0 ? (
+      <div class="p-8 text-center text-sm text-gem-text-muted">
+        No spotlights yet. <a href="/admin/gems/new" class="text-gem-gold hover:underline">Create one →</a>
+      </div>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-gem-mist text-left text-xs uppercase tracking-widest text-gem-text-subtle">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Headline</th>
+            <th class="px-4 py-3 font-semibold">Business</th>
+            <th class="px-4 py-3 font-semibold">Week</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((g) => (
+            <tr class="border-t border-gem-border hover:bg-gem-mist/50">
+              <td class="px-4 py-3">
+                <a href={`/admin/gems/${g.id}`} class="font-medium text-gem-text hover:text-gem-gold no-underline">{g.headline}</a>
+              </td>
+              <td class="px-4 py-3 text-gem-text-muted">{g.business?.name}</td>
+              <td class="px-4 py-3 text-gem-text-muted">{g.weekLabel}</td>
+              <td class="px-4 py-3">
+                <span class:list={[
+                  "inline-block px-2 py-0.5 rounded-full text-xs font-medium",
+                  g.publishedAt ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700",
+                ]}>{g.publishedAt ? "PUBLISHED" : "DRAFT"}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

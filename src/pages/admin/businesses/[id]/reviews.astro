@@ -1,0 +1,106 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { business, review } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/businesses");
+
+const biz = await db.query.business.findFirst({
+  where: eq(business.id, id),
+  columns: { id: true, name: true, slug: true },
+});
+if (!biz) return Astro.redirect("/admin/businesses");
+
+const reviews = await db.query.review.findMany({
+  where: eq(review.businessId, id),
+  orderBy: desc(review.createdAt),
+});
+const pending = reviews.filter((r) => !r.isApproved);
+const approved = reviews.filter((r) => r.isApproved);
+---
+
+<AdminLayout title={`Reviews · ${biz.name}`} activeSection="businesses">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/businesses" class="hover:text-gem-gold">Businesses</a>
+      <span class="mx-2">/</span>
+      <a href={`/admin/businesses/${biz.id}`} class="hover:text-gem-gold">{biz.name}</a>
+      <span class="mx-2">/</span>
+      <span>Reviews</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Reviews</h1>
+    <p class="text-gem-text-muted text-sm mt-1">{pending.length} pending · {approved.length} approved</p>
+  </div>
+
+  <section class="mb-8">
+    <h2 class="font-display text-lg mb-3">Pending ({pending.length})</h2>
+    {pending.length === 0 ? (
+      <p class="text-sm text-gem-text-muted">No reviews waiting on moderation.</p>
+    ) : (
+      <ul class="space-y-3 list-none m-0 p-0">
+        {pending.map((r) => (
+          <li class="bg-white border border-gem-border rounded-2xl p-4" data-review-id={r.id}>
+            <div class="flex items-start justify-between gap-4 mb-2">
+              <div>
+                <p class="text-sm font-semibold">{r.authorName}</p>
+                <p class="text-xs text-gem-text-subtle">{r.authorEmail} · {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="approve-btn text-sm px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700">Approve</button>
+                <button class="reject-btn text-sm px-3 py-1.5 rounded-lg border border-gem-border hover:bg-gem-mist">Reject</button>
+              </div>
+            </div>
+            <p class="text-sm text-gem-text">{r.body || "(no body)"}</p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <section>
+    <h2 class="font-display text-lg mb-3">Approved ({approved.length})</h2>
+    {approved.length === 0 ? (
+      <p class="text-sm text-gem-text-muted">No approved reviews yet.</p>
+    ) : (
+      <ul class="space-y-3 list-none m-0 p-0">
+        {approved.map((r) => (
+          <li class="bg-white border border-gem-border rounded-2xl p-4" data-review-id={r.id}>
+            <div class="flex items-start justify-between gap-4 mb-2">
+              <div>
+                <p class="text-sm font-semibold">{r.authorName}</p>
+                <p class="text-xs text-gem-text-subtle">{r.authorEmail} · {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
+              </div>
+              <button class="reject-btn text-sm px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Remove</button>
+            </div>
+            <p class="text-sm text-gem-text">{r.body || "(no body)"}</p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <script is:inline>
+    function bind(button, action) {
+      button.addEventListener("click", async () => {
+        const li = button.closest("[data-review-id]");
+        const id = li.dataset.reviewId;
+        button.disabled = true;
+        const res = await fetch(`/api/admin/reviews/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        });
+        if (res.ok) {
+          li.remove();
+        } else {
+          alert("Action failed.");
+          button.disabled = false;
+        }
+      });
+    }
+    document.querySelectorAll(".approve-btn").forEach((b) => bind(b, "approve"));
+    document.querySelectorAll(".reject-btn").forEach((b) => bind(b, "reject"));
+  </script>
+</AdminLayout>
