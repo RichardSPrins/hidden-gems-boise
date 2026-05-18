@@ -24,11 +24,7 @@ export const auth = betterAuth({
       // matches the runInBackgroundOrAwait Better Auth uses internally.
       void sendEmail({ to: user.email, subject, html, text, kind: "auth" });
     },
-    // requireEmailVerification: false (default). Flip to true once your
-    // admin account's email_verified column is true in the DB, otherwise you
-    // lock yourself out. Either click the verify link you'll receive on next
-    // sign-up, or run:
-    //   UPDATE "user" SET email_verified = true WHERE email = '<you>';
+    requireEmailVerification: true,
   },
   emailVerification: {
     // Auto-send a verification email on sign-up. Login still works without
