@@ -69,6 +69,8 @@ const next = Astro.url.searchParams.get("next") ?? "";
             name: fd.get("name"),
             email: fd.get("email"),
             password: fd.get("password"),
+            // After verification, land back here so the user can sign in.
+            callbackURL: "/auth/login?verified=true",
           }),
         });
 
@@ -81,6 +83,9 @@ const next = Astro.url.searchParams.get("next") ?? "";
           return;
         }
 
+        // Better Auth signed them in; verification email is sent in the
+        // background (sendOnSignUp). The /portal "coming soon" page already
+        // tells them to look out for the verification email.
         window.location.href = next || "/portal";
       } catch (err) {
         errEl.textContent = "Network error. Please try again.";

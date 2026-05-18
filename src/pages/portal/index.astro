@@ -1,7 +1,10 @@
 ---
 import PortalLayout from "@/layouts/PortalLayout.astro";
 
-const user = Astro.locals.user;
+const user = Astro.locals.user as
+  | { name?: string | null; email?: string; emailVerified?: boolean }
+  | null;
+const unverified = user && user.emailVerified === false;
 ---
 
 <PortalLayout title="Business Portal">
@@ -11,6 +14,23 @@ const user = Astro.locals.user;
       Manage the listings you've claimed on Hidden Gems.
     </p>
   </div>
+
+  {unverified && (
+    <div class="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-2xl p-4 mb-4 max-w-2xl flex items-start justify-between gap-4">
+      <p class="text-sm">
+        <strong>Confirm your email.</strong> We sent a verification link to{" "}
+        <span class="font-mono">{user?.email}</span>. Click it to keep full
+        access to your account.
+      </p>
+      <button
+        type="button"
+        id="resend-verify"
+        class="text-sm font-semibold text-yellow-900 hover:underline shrink-0"
+      >
+        Resend
+      </button>
+    </div>
+  )}
 
   <div class="bg-white border border-gem-border rounded-2xl p-8 max-w-2xl">
     <h2 class="font-display text-xl text-gem-text mb-2">The business portal is coming soon</h2>
@@ -22,4 +42,28 @@ const user = Astro.locals.user;
       Email <a href="mailto:hello@hiddengemsboise.com" class="text-gem-gold hover:underline">hello@hiddengemsboise.com</a> with any questions.
     </p>
   </div>
+
+  {unverified && (
+    <script is:inline define:vars={{ email: user?.email }}>
+      const btn = document.getElementById("resend-verify");
+      btn?.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        try {
+          await fetch("/api/auth/send-verification-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              callbackURL: "/auth/login?verified=true",
+            }),
+          });
+          btn.textContent = "Sent ✓";
+        } catch {
+          btn.textContent = "Failed — try again";
+          btn.disabled = false;
+        }
+      });
+    </script>
+  )}
 </PortalLayout>

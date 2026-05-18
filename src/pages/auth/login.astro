@@ -7,6 +7,12 @@ if (Astro.locals.user) {
 }
 
 const next = Astro.url.searchParams.get("next") ?? "";
+const flash = Astro.url.searchParams.get("reset") === "success"
+  ? "Password updated. Sign in with your new password."
+  : Astro.url.searchParams.get("verified") === "true"
+  ? "Email verified. Sign in to continue."
+  : null;
+const verifyError = Astro.url.searchParams.get("error");
 ---
 
 <BaseLayout title="Sign In" noindex={true} nofollow={true}>
@@ -23,6 +29,21 @@ const next = Astro.url.searchParams.get("next") ?? "";
         </p>
       </div>
 
+      {flash && (
+        <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm" role="status">
+          {flash}
+        </div>
+      )}
+      {verifyError && !flash && (
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm" role="alert">
+          {verifyError === "TOKEN_EXPIRED"
+            ? "That verification link expired. Sign in to request a new one."
+            : verifyError === "INVALID_TOKEN"
+            ? "That link is no longer valid."
+            : "Something went wrong with that link."}
+        </div>
+      )}
+
       <form id="login-form" class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 shadow-sm">
         <div>
           <label for="email" class="block text-sm font-medium text-gem-text mb-1.5">Email</label>
@@ -36,7 +57,10 @@ const next = Astro.url.searchParams.get("next") ?? "";
           />
         </div>
         <div>
-          <label for="password" class="block text-sm font-medium text-gem-text mb-1.5">Password</label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="password" class="block text-sm font-medium text-gem-text">Password</label>
+            <a href="/auth/forgot-password" class="text-xs text-gem-gold hover:underline">Forgot password?</a>
+          </div>
           <input
             id="password"
             name="password"
