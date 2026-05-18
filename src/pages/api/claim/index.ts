@@ -14,8 +14,6 @@ export const POST: APIRoute = async ({ request }) => {
       ownerName,
       ownerEmail,
       ownerPhone,
-      tier,
-      billingCycle,
       notes,
     } = body;
 
@@ -23,8 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
       !businessId ||
       !verificationMethod ||
       !ownerName ||
-      !ownerEmail ||
-      !tier
+      !ownerEmail
     ) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
@@ -61,7 +58,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Lock the listing with a pending claim
+    // Lock the listing with a pending claim. claimTier/claimBillingCycle stay
+    // null on claim — premium upgrade is an admin-initiated flow that happens
+    // out-of-band (via outreach) after the claim is approved.
     await db
       .update(business)
       .set({
@@ -70,8 +69,6 @@ export const POST: APIRoute = async ({ request }) => {
         claimOwnerEmail: ownerEmail.trim(),
         claimOwnerPhone: ownerPhone?.trim() ?? null,
         claimVerificationMethod: verificationMethod,
-        claimTier: tier,
-        claimBillingCycle: billingCycle ?? "monthly",
         claimNotes: notes?.trim() ?? null,
         claimSubmittedAt: new Date(),
       })

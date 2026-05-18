@@ -95,120 +95,15 @@ const prefillName = url.searchParams.get("name") ?? "";
         <div class="verify-methods" id="verify-methods"></div>
       </div>
 
-      <!-- STEP 4: Choose plan -->
-      <div class="claim-step claim-step-locked hidden" id="step-plan">
+      <!-- STEP 4: Your info -->
+      <div class="claim-step claim-step-locked hidden" id="step-info">
         <div class="claim-step-header">
           <div class="claim-step-num">4</div>
           <div>
-            <h2 class="claim-step-title">Choose Your Plan</h2>
-            <p class="claim-step-sub">
-              You won't be charged until your claim is approved.
-            </p>
-          </div>
-        </div>
-
-        <div class="billing-toggle-wrap">
-          <span class="billing-label">Monthly</span>
-          <button
-            class="billing-toggle"
-            id="billing-toggle"
-            type="button"
-            aria-pressed="false"
-          >
-            <span class="billing-toggle-thumb"></span>
-          </button>
-          <span class="billing-label">
-            Annual <span class="billing-save-badge">Save ~17%</span>
-          </span>
-        </div>
-
-        <div class="tier-grid">
-          {
-            [
-              {
-                id: "BASIC",
-                name: "Basic",
-                monthly: 9,
-                annual: 90,
-                description: "Get listed and discoverable.",
-                features: [
-                  "Live listing",
-                  "Basic info",
-                  "One photo",
-                  "Contact details",
-                ],
-              },
-              {
-                id: "PRO",
-                name: "Pro",
-                monthly: 49,
-                annual: 490,
-                description: "The full listing experience.",
-                features: [
-                  "Full photo gallery",
-                  "Website & social links",
-                  "Events",
-                  "Review responses",
-                ],
-                popular: true,
-              },
-              {
-                id: "ELITE",
-                name: "Elite",
-                monthly: 99,
-                annual: 990,
-                description: "Maximum visibility + social spotlight.",
-                features: [
-                  "Featured placement",
-                  "Homepage carousel",
-                  "Monthly social post",
-                  "Analytics",
-                ],
-              },
-            ].map((tier) => (
-              <label
-                class:list={["tier-card", tier.popular && "tier-card-popular"]}
-              >
-                <input
-                  type="radio"
-                  name="claim-tier"
-                  value={tier.id}
-                  class="sr-only tier-radio"
-                  checked={tier.popular}
-                />
-                {tier.popular && (
-                  <span class="tier-popular-badge">Most Popular</span>
-                )}
-                <div class="tier-name">{tier.name}</div>
-                <div class="tier-price">
-                  <span class="tier-price-monthly">
-                    <strong>${tier.monthly}</strong>/mo
-                  </span>
-                  <span class="tier-price-annual" style="display:none">
-                    <strong>${tier.annual}</strong>/yr
-                  </span>
-                </div>
-                <p class="tier-desc">{tier.description}</p>
-                <ul class="tier-features">
-                  {tier.features.map((f) => (
-                    <li>✓ {f}</li>
-                  ))}
-                </ul>
-              </label>
-            ))
-          }
-        </div>
-      </div>
-
-      <!-- STEP 5: Your info -->
-      <div class="claim-step claim-step-locked hidden" id="step-info">
-        <div class="claim-step-header">
-          <div class="claim-step-num">5</div>
-          <div>
             <h2 class="claim-step-title">Your Information</h2>
             <p class="claim-step-sub">
-              We'll use this to contact you about your claim and set up your
-              account.
+              We'll use this to confirm your claim and get your portal access
+              set up.
             </p>
           </div>
         </div>
@@ -271,8 +166,7 @@ const prefillName = url.searchParams.get("name") ?? "";
         <div class="claim-submit-row">
           <p class="submit-disclaimer">
             By submitting you confirm you are the authorized owner or
-            representative of this business. You won't be charged until your
-            claim is approved.
+            representative of this business. Claiming is free.
           </p>
           <button
             class="btn-gold submit-btn"
@@ -297,19 +191,11 @@ const prefillName = url.searchParams.get("name") ?? "";
           </div>
           <div class="claim-how-step">
             <span class="claim-how-num">2</span>
-            <span>Choose a plan — no charge until approved</span>
-          </div>
-          <div class="claim-how-step">
-            <span class="claim-how-num">3</span>
             <span>We review and contact you within 1–2 business days</span>
           </div>
           <div class="claim-how-step">
-            <span class="claim-how-num">4</span>
-            <span>Create your account and complete payment</span>
-          </div>
-          <div class="claim-how-step">
-            <span class="claim-how-num">5</span>
-            <span>Access your portal and manage your listing</span>
+            <span class="claim-how-num">3</span>
+            <span>Access your portal and manage your free listing</span>
           </div>
         </div>
       </div>
@@ -990,7 +876,6 @@ const prefillName = url.searchParams.get("name") ?? "";
   const stepSearch = document.getElementById("step-search") as HTMLDivElement;
   const stepConfirm = document.getElementById("step-confirm") as HTMLDivElement;
   const stepVerify = document.getElementById("step-verify") as HTMLDivElement;
-  const stepPlan = document.getElementById("step-plan") as HTMLDivElement;
   const stepInfo = document.getElementById("step-info") as HTMLDivElement;
 
   const selectedBizCard = document.getElementById(
@@ -1139,8 +1024,7 @@ const prefillName = url.searchParams.get("name") ?? "";
       label.querySelector("input")?.addEventListener("change", () => {
         selectedVerification = method.id;
         completeStep(stepVerify);
-        unlockStep(stepPlan, true);
-        unlockStep(stepInfo, false);
+        unlockStep(stepInfo, true);
       });
       verifyMethodsWrap.appendChild(label);
     });
@@ -1148,7 +1032,6 @@ const prefillName = url.searchParams.get("name") ?? "";
     completeStep(stepSearch);
     unlockStep(stepConfirm); // only scroll to step 2
     stepVerify.classList.remove("hidden", "claim-step-locked");
-    stepPlan.classList.remove("hidden", "claim-step-locked");
     stepInfo.classList.remove("hidden", "claim-step-locked");
   }
 
@@ -1160,34 +1043,14 @@ const prefillName = url.searchParams.get("name") ?? "";
     stepSearch.classList.add("active");
     lockStep(stepConfirm);
     lockStep(stepVerify);
-    lockStep(stepPlan);
     lockStep(stepInfo);
     stepConfirm.classList.add("hidden");
     stepVerify.classList.add("hidden");
-    stepPlan.classList.add("hidden");
     stepInfo.classList.add("hidden");
     searchResults.innerHTML = "";
     searchResults.classList.add("hidden");
     searchEmpty.classList.add("hidden");
     searchInput.focus();
-  });
-
-  // Billing toggle
-  const toggle = document.getElementById("billing-toggle") as HTMLButtonElement;
-  const monthlyPrices = document.querySelectorAll(".tier-price-monthly");
-  const annualPrices = document.querySelectorAll(".tier-price-annual");
-  let isAnnual = false;
-
-  toggle?.addEventListener("click", () => {
-    isAnnual = !isAnnual;
-    toggle.classList.toggle("active", isAnnual);
-    toggle.setAttribute("aria-pressed", String(isAnnual));
-    monthlyPrices.forEach(
-      (el) => ((el as HTMLElement).style.display = isAnnual ? "none" : "")
-    );
-    annualPrices.forEach(
-      (el) => ((el as HTMLElement).style.display = isAnnual ? "" : "none")
-    );
   });
 
   // Submit claim
@@ -1204,16 +1067,10 @@ const prefillName = url.searchParams.get("name") ?? "";
     const claimNotes = (
       document.getElementById("claimNotes") as HTMLTextAreaElement
     ).value.trim();
-    const tier = (
-      document.querySelector(
-        'input[name="claim-tier"]:checked'
-      ) as HTMLInputElement
-    )?.value;
 
     if (
       !ownerName ||
       !ownerEmail ||
-      !tier ||
       !selectedBiz ||
       !selectedVerification
     ) {
@@ -1236,8 +1093,6 @@ const prefillName = url.searchParams.get("name") ?? "";
           ownerName,
           ownerEmail,
           ownerPhone: ownerPhone || null,
-          tier,
-          billingCycle: isAnnual ? "annual" : "monthly",
           notes: claimNotes || null,
         }),
       });

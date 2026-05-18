@@ -22,8 +22,6 @@ export const POST: APIRoute = async ({ request }) => {
       neighborhood,
       bio,
       pricePoint,
-      tier,
-      billingCycle,
       ownerName,
       ownerEmail,
       notes,
@@ -71,7 +69,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Insert into public_submission
+    // Insert into public_submission. tier/billingCycle are internal-only fields
+    // managed by admin if/when a business is upgraded to premium out-of-band —
+    // they're never collected from the public submission form.
     await db.insert(publicSubmission).values({
       businessName: businessName.trim(),
       categoryId: categoryId || null,
@@ -86,8 +86,8 @@ export const POST: APIRoute = async ({ request }) => {
       neighborhood: neighborhood || null,
       bio: bio || null,
       pricePoint: pricePoint || null,
-      tier: tier || "PRO",
-      billingCycle: billingCycle || "monthly",
+      tier: "FREE",
+      billingCycle: "monthly",
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim(),
       notes: notes || null,
