@@ -71,7 +71,13 @@ const socialPlatforms = [
 
       <div>
         <label class="block text-sm font-medium mb-1.5">Bio</label>
-        <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="2–4 sentences. Why is this place a hidden gem?"></textarea>
+        <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="2–4 sentences. The business's own description on their detail page."></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Editorial blurb</label>
+        <textarea name="editorialBlurb" rows="3" maxlength="600" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="50–80 words. Owner story, what makes them worth visiting. Used on the home page grid."></textarea>
+        <p class="text-xs text-gem-text-subtle mt-1">Editorial-warm voice. Specific differentiators ("20 years," "owner-roasted") land harder than adjectives.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -172,13 +178,23 @@ const socialPlatforms = [
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1.5">Primary image URL</label>
-        <input name="imageUrl" type="url" placeholder="https://…" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
-        <p class="text-xs text-gem-text-subtle mt-1">URL only for now. File upload comes later.</p>
+        <label class="block text-sm font-medium mb-1.5">Primary image</label>
+        <input
+          type="file"
+          id="image-file"
+          accept="image/jpeg,image/png,image/webp"
+          class="block w-full text-sm text-gem-text-muted file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-gem-text file:text-white file:font-medium file:cursor-pointer file:hover:bg-gem-stone"
+        />
+        <input name="imageUrl" type="hidden" />
+        <p id="image-status" class="text-xs text-gem-text-subtle mt-1">JPEG, PNG, or WebP. Max 5 MB. Optional — you can add it later.</p>
+        <div id="image-preview" class="hidden mt-3">
+          <img id="image-preview-img" alt="" class="rounded-lg max-h-48 border border-gem-border" />
+          <button type="button" id="image-remove" class="text-xs text-red-600 hover:underline mt-2">Remove</button>
+        </div>
       </div>
       <div>
         <label class="block text-sm font-medium mb-1.5">Image alt text</label>
-        <input name="imageAlt" type="text" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+        <input name="imageAlt" type="text" placeholder="Describe what's in the image — used for accessibility & SEO" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
       </div>
     </section>
 
@@ -215,6 +231,64 @@ const socialPlatforms = [
       subSel.innerHTML =
         '<option value="">—</option>' +
         subs.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+    });
+
+    // Image upload — uploads to R2 immediately on file selection, stashes the
+    // returned URL in the hidden imageUrl input. The form submit reads that
+    // hidden value just like the old URL paste field.
+    const fileInput = document.getElementById("image-file");
+    const urlInput = document.querySelector('input[name="imageUrl"]');
+    const status = document.getElementById("image-status");
+    const preview = document.getElementById("image-preview");
+    const previewImg = document.getElementById("image-preview-img");
+    const removeBtn = document.getElementById("image-remove");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        status.textContent = "That file is bigger than 5 MB. Pick a smaller image.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+        return;
+      }
+
+      status.textContent = "Uploading…";
+      status.className = "text-xs text-gem-text-muted mt-1";
+
+      const body = new FormData();
+      body.append("file", file);
+
+      try {
+        const res = await fetch("/api/admin/upload", { method: "POST", body });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          status.textContent = data.error || "Upload failed.";
+          status.className = "text-xs text-red-600 mt-1";
+          fileInput.value = "";
+          return;
+        }
+        const data = await res.json();
+        urlInput.value = data.url;
+        previewImg.src = data.url;
+        preview.classList.remove("hidden");
+        status.textContent = "Uploaded ✓";
+        status.className = "text-xs text-green-700 mt-1";
+      } catch {
+        status.textContent = "Network error during upload.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+      }
+    });
+
+    removeBtn.addEventListener("click", () => {
+      urlInput.value = "";
+      fileInput.value = "";
+      preview.classList.add("hidden");
+      previewImg.src = "";
+      status.textContent = "JPEG, PNG, or WebP. Max 5 MB. Optional — you can add it later.";
+      status.className = "text-xs text-gem-text-subtle mt-1";
     });
 
     // Add another social row
@@ -258,6 +332,7 @@ const socialPlatforms = [
         categoryId: fd.get("categoryId"),
         subcategoryId: fd.get("subcategoryId") || undefined,
         bio: fd.get("bio") || undefined,
+        editorialBlurb: fd.get("editorialBlurb") || undefined,
         websiteUrl: fd.get("websiteUrl") || undefined,
         bookingUrl: fd.get("bookingUrl") || undefined,
         pricePoint: fd.get("pricePoint") || undefined,

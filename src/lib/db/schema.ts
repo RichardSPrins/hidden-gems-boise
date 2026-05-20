@@ -206,6 +206,13 @@ export const business = pgTable("business", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   bio: text("bio"),
+  /**
+   * Editorial blurb shown on the home page "Local Favorites" grid. 50-80
+   * words written in editorial-warm voice — owner story, what makes them
+   * worth visiting. Distinct from `bio`, which is the business's own
+   * description on their detail page.
+   */
+  editorialBlurb: text("editorial_blurb"),
   websiteUrl: text("website_url"),
   bookingUrl: text("booking_url"),
   keywords: text("keywords").array().notNull().default([]),

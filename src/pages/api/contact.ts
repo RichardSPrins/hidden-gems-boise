@@ -28,6 +28,16 @@ export const POST: APIRoute = async ({ request }) => {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const subject = typeof body.subject === "string" ? body.subject.trim() : "";
   const message = typeof body.message === "string" ? body.message.trim() : "";
+  const rawType = typeof body.type === "string" ? body.type.trim() : "";
+  const type = ["nomination", "business", "press", "general"].includes(rawType)
+    ? rawType
+    : "general";
+  const typeLabel: Record<string, string> = {
+    nomination: "Nomination",
+    business: "Business inquiry",
+    press: "Press / partnerships",
+    general: "General",
+  };
 
   if (!name || !email || !message) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -58,18 +68,27 @@ export const POST: APIRoute = async ({ request }) => {
 
   const lineBreaks = (s: string) => escapeHtml(s).replace(/\n/g, "<br />");
   const html = `
-    <h2>New contact message</h2>
+    <h2>${escapeHtml(typeLabel[type])} — Hidden Gems Boise</h2>
     <p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>
+    <p><strong>Type:</strong> ${escapeHtml(typeLabel[type])}</p>
     ${subject ? `<p><strong>Subject:</strong> ${escapeHtml(subject)}</p>` : ""}
     <p style="white-space:pre-wrap">${lineBreaks(message)}</p>
   `;
+
+  const tagPrefix =
+    type === "nomination" ? "Nomination" :
+    type === "business" ? "Business" :
+    type === "press" ? "Press" :
+    "Hidden Gems";
 
   try {
     await resend.emails.send({
       from: FROM,
       to: INBOX,
       replyTo: email,
-      subject: subject ? `[Hidden Gems] ${subject}` : `[Hidden Gems] Message from ${name}`,
+      subject: subject
+        ? `[${tagPrefix}] ${subject}`
+        : `[${tagPrefix}] ${typeLabel[type]} from ${name}`,
       html,
     });
   } catch (err) {

@@ -10,6 +10,7 @@ const {
   upcomingEvents: rawEvents,
   featuredGem,
   previousGems,
+  totalApproved,
 } = await response.json();
 
 const featuredGemExcerpt = featuredGem
@@ -29,28 +30,24 @@ const upcomingEvents = rawEvents.map((evt: any) => ({
 // FAQs
 const faqs = [
   {
-    q: "What is Hidden Gems Boise?",
-    a: "Hidden Gems Boise is a curated local directory spotlighting the best independently owned businesses across the Treasure Valley, from beloved neighborhood staples to exciting new arrivals.",
+    q: "Do businesses pay to be listed?",
+    a: "No. Every business on Hidden Gems Boise is here because we think it's worth your time — never because they paid for placement. It's a curated directory, not an ad network.",
   },
   {
-    q: "How are businesses selected?",
-    a: "Every listing is vetted and approved by our team. We look for quality, community impact, and what makes each business genuinely worth visiting.",
+    q: "How do you pick what gets listed?",
+    a: "Independently owned, locally operated, and actually worth recommending — that's the bar. No national chains, no franchises. Every submission is read by a human before it goes live.",
   },
   {
-    q: "What is the Gem of the Week?",
-    a: "Each week we spotlight one standout local business with an in-depth feature — their story, what makes them special, and why you should check them out.",
+    q: "What's a Gem of the Week?",
+    a: "Each week we write up one Boise business in depth — the owner's story, what makes the place special, and why you should stop in. It's the editorial heart of the site.",
   },
   {
-    q: "How do I get my business listed?",
-    a: "Submit your business through our simple form. Our team reviews every submission and will reach out to complete your listing.",
+    q: "I own a business. How do I get listed?",
+    a: "Use the List Your Business form. We read every submission and usually publish within 1–2 business days.",
   },
   {
-    q: "Is it free to be listed?",
-    a: "Yes — being featured on Hidden Gems Boise is free. We curate the directory editorially, so the goal is connecting locals with great independent businesses, not selling listings.",
-  },
-  {
-    q: "How do I leave a review?",
-    a: "Visit any business listing page and scroll to the reviews section. You'll need to provide your name and email to submit a review.",
+    q: "I know a great Boise spot you should feature.",
+    a: "Tell us about it — drop a note via the contact section. Local nominations are how we find a lot of our best listings.",
   },
 ];
 
@@ -65,6 +62,23 @@ const categoryIcons: Record<string, string> = {
   Education: "📚",
   Automotive: "🚗",
 };
+
+// Editorial taglines per category — used on the home Browse-by-Category grid.
+// Update these alongside category name changes.
+const categoryTaglines: Record<string, string> = {
+  "Food & Drink": "Coffee, brunch, breweries, and the dive bars locals actually go to.",
+  "Health & Wellness": "Gyms, yoga, salons, and self-care that doesn't feel performative.",
+  Shopping: "Boutiques, vintage, art, gifts — when the chain just won't do.",
+  "Home Services": "The HVAC, the plumber, the painter — the ones who answer the phone.",
+  "Arts & Entertainment": "Galleries, venues, escape rooms — places to leave the house for.",
+  "Professional Services": "Lawyers, accountants, designers — local pros worth a real conversation.",
+  Education: "Tutors, music teachers, dance schools — for kids and adults alike.",
+  Automotive: "Mechanics, detailers, body shops — without the upsell.",
+};
+
+function pluralize(n: number, singular: string, plural: string) {
+  return n === 1 ? singular : plural;
+}
 
 function formatEventDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -98,70 +112,44 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     <div class="hero-bg" style={`background-image: url(${boiseHero.src})`}></div>
     <div class="hero-overlay"></div>
     <div class="hero-content">
-      <p class="hero-eyebrow">Treasure Valley's Curated Directory</p>
-      <h1 class="hero-title">Discover Boise's<br /><em>Hidden Gems</em></h1>
+      <p class="hero-eyebrow">A Boise directory, written by locals</p>
+      <h1 class="hero-title">Sharing Boise's<br /><em>Hidden Gems</em>.</h1>
       <p class="hero-subtitle">
-        Handpicked local businesses worth knowing about, from beloved
-        neighborhood staples to exciting new arrivals.
+        {totalApproved}+ independently owned spots across the Treasure Valley — vouched for, written up, and worth telling a friend about.
       </p>
+      <div class="hero-ctas">
+        <a href="/explore" class="hero-cta-primary">Explore the directory →</a>
+        <a href="/submit" class="hero-cta-secondary">List your business</a>
+      </div>
+    </div>
+  </section>
 
-      <!-- Search -->
-      <div class="search-box">
-        <div class="search-tabs">
-          <button class="search-tab active" data-tab="places">🏪 Places</button>
-          <button class="search-tab" data-tab="events">🗓 Events</button>
-        </div>
-
-        <form
-          class="search-panel active"
-          id="tab-places"
-          action="/explore"
-          method="get"
-        >
-          <div class="search-row">
-            <input
-              class="search-input"
-              name="q"
-              type="text"
-              placeholder="Search businesses, cuisine, services…"
-              autocomplete="off"
-            />
-            <select class="search-select" name="category">
-              <option value="">All Categories</option>
-              {categories.map((c) => <option value={c.slug}>{c.name}</option>)}
-            </select>
-            <button type="submit" class="search-btn">Search</button>
-          </div>
-        </form>
-
-        <form
-          class="search-panel"
-          id="tab-events"
-          action="/events"
-          method="get"
-        >
-          <div class="search-row">
-            <input
-              class="search-input"
-              name="q"
-              type="text"
-              placeholder="Search events, concerts, workshops…"
-              autocomplete="off"
-            />
-            <select class="search-select" name="category">
-              <option value="">All Types</option>
-              <option value="GRAND_OPENING">Grand Opening</option>
-              <option value="SALE_AND_PROMOTION">Sale & Promotion</option>
-              <option value="WORKSHOP_AND_CLASS">Workshop & Class</option>
-              <option value="LIVE_MUSIC_AND_ENTERTAINMENT">Live Music</option>
-              <option value="COMMUNITY_AND_NETWORKING">Community</option>
-              <option value="FOOD_AND_DRINK_SPECIAL">Food & Drink</option>
-              <option value="SEASONAL_AND_HOLIDAY">Seasonal</option>
-              <option value="CHARITY_AND_FUNDRAISER">Charity</option>
-            </select>
-            <button type="submit" class="search-btn">Search</button>
-          </div>
-        </form>
+  <!-- WHAT IS HIDDEN GEMS? -->
+  <section class="whatis-section">
+    <div class="section-container whatis-container">
+      <span class="section-eyebrow">About</span>
+      <h2 class="whatis-title">
+        A directory of Boise's best, <em>vouched for by a local.</em>
+      </h2>
+      <div class="whatis-body">
+        <p>
+          Hidden Gems Boise exists for one reason: the independently owned businesses
+          that make this city feel like home shouldn't be the ones you have to scroll
+          past five pages of national chains to find.
+        </p>
+        <p>
+          Every listing on this site is independently owned, locally operated, and
+          here on its own merit. <strong>No national chains. No franchises.
+          No pay-to-play placement.</strong> If a place is featured, it's because
+          we think it's worth your time.
+        </p>
+        <p>
+          New listings get a read from a real person before they go up. Every week,
+          we write up one business in depth as the
+          <a href="/gems" class="whatis-link">Gem of the Week</a> — owner story,
+          why it's worth visiting, what makes it different from whatever you'd
+          find on Yelp.
+        </p>
       </div>
     </div>
   </section>
@@ -173,19 +161,30 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
         <span class="section-eyebrow">Browse by Category</span>
         <h2 class="section-title">What are you <em>looking for?</em></h2>
         <p class="section-sub">
-          Explore hundreds of local businesses across dozens of categories.
+          Pick a category and we'll show you what's worth knowing about.
         </p>
       </div>
       <div class="categories-grid">
         {
-          categories.map((cat) => (
-            <a href={`/explore/${cat.slug}`} class="category-card">
-              <span class="category-icon">
-                {categoryIcons[cat.name] ?? "📍"}
-              </span>
-              <span class="category-name">{cat.name}</span>
-            </a>
-          ))
+          categories.map(
+            (cat: { id: string; name: string; slug: string; businessCount: number }) => (
+              <a href={`/explore/${cat.slug}`} class="category-card">
+                <div class="category-card-top">
+                  <span class="category-icon">
+                    {categoryIcons[cat.name] ?? "📍"}
+                  </span>
+                  <span class="category-count">
+                    {cat.businessCount}{" "}
+                    {pluralize(cat.businessCount, "spot", "spots")}
+                  </span>
+                </div>
+                <span class="category-name">{cat.name}</span>
+                {categoryTaglines[cat.name] && (
+                  <span class="category-tagline">{categoryTaglines[cat.name]}</span>
+                )}
+              </a>
+            ),
+          )
         }
       </div>
     </div>
@@ -299,97 +298,75 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     )
   }
 
-  <!-- TRENDING BUSINESSES -->
-  <section class="carousel-section">
+  <!-- LOCAL FAVORITES -->
+  <section class="favorites-section">
     <div class="section-container">
       <div class="section-header">
-        <span class="section-eyebrow">Trending Now</span>
-        <h2 class="section-title">Top Rated <em>Local Gems</em></h2>
-        <p class="section-sub">The businesses Boise keeps coming back to.</p>
+        <span class="section-eyebrow">Local Favorites</span>
+        <h2 class="section-title">A few <em>Boise locals love.</em></h2>
+        <p class="section-sub">
+          A handful of places worth knowing about. Each one independently owned,
+          read up on before it went live.
+        </p>
       </div>
-      <div class="carousel-wrapper">
-        <button class="carousel-btn prev" id="biz-prev" aria-label="Previous"
-          >←</button
-        >
-        <div class="embla" id="biz-carousel">
-          <div class="embla__container">
-            {
-              trending.length > 0 ? (
-                trending.map((biz) => (
-                  <div class="embla__slide">
-                    <a href={`/listings/${biz.slug}`} class="biz-card">
-                      <div class="biz-card-img">
-                        {biz.images[0] ? (
-                          <img
-                            src={biz.images[0].url}
-                            alt={biz.images[0].alt ?? biz.name}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span>
-                            {categoryIcons[biz.category.name] ?? "📍"}
-                          </span>
-                        )}
-                      </div>
-                      <div class="biz-card-body">
-                        <div class="biz-card-meta">
-                          <span class="biz-card-cat">{biz.category.name}</span>
-                          {biz.pricePoint && (
-                            <span class="biz-card-price">
-                              {priceMap[biz.pricePoint]}
-                            </span>
-                          )}
-                        </div>
-                        <div class="biz-card-name">{biz.name}</div>
-                        <div class="biz-card-location">Boise, ID</div>
-                        {biz.reviewCount > 0 && (
-                          <div class="biz-card-rating">
-                            <span>{renderStars(biz.averageRating)}</span>
-                            <span>({biz.reviewCount})</span>
-                          </div>
-                        )}
-                      </div>
-                    </a>
+
+      {trending.length === 0 ? (
+        <p class="favorites-empty">Listings coming soon.</p>
+      ) : (
+        <div class="favorites-grid">
+          {trending.map((biz: any) => {
+            const location = biz.locations?.[0];
+            const blurb = biz.editorialBlurb || biz.bio;
+            const neighborhood = location?.neighborhood;
+            return (
+              <a href={`/listings/${biz.slug}`} class="fav-card">
+                <div class="fav-card-img">
+                  {biz.images?.[0] ? (
+                    <img
+                      src={biz.images[0].url}
+                      alt={biz.images[0].alt ?? biz.name}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span class="fav-card-img-placeholder">
+                      {categoryIcons[biz.category?.name] ?? "📍"}
+                    </span>
+                  )}
+                </div>
+                <div class="fav-card-body">
+                  <div class="fav-card-meta">
+                    <span class="fav-card-cat">
+                      {biz.category?.name}
+                      {neighborhood && (
+                        <span class="fav-card-hood"> · {neighborhood}</span>
+                      )}
+                    </span>
+                    {biz.pricePoint && (
+                      <span class="fav-card-price">
+                        {priceMap[biz.pricePoint]}
+                      </span>
+                    )}
                   </div>
-                ))
-              ) : (
-                <div class="embla__slide">
-                  <div
-                    class="biz-card"
-                    style="padding:2rem;text-align:center;color:var(--gem-text-muted)"
-                  >
-                    Listings coming soon
+                  <div class="fav-card-name">{biz.name}</div>
+                  {blurb && <p class="fav-card-blurb">{blurb}</p>}
+                  <div class="fav-card-footer">
+                    {biz.reviewCount > 0 && (
+                      <span class="fav-card-rating">
+                        {renderStars(biz.averageRating)}
+                        <span class="fav-card-rating-count">({biz.reviewCount})</span>
+                      </span>
+                    )}
+                    <span class="fav-card-link">Read more →</span>
                   </div>
                 </div>
-              )
-            }
-          </div>
+              </a>
+            );
+          })}
         </div>
-        <button class="carousel-btn next" id="biz-next" aria-label="Next"
-          >→</button
-        >
-      </div>
-    </div>
-  </section>
+      )}
 
-  <!-- CTA -->
-  <section class="cta-section">
-    <div class="section-container">
-      <div class="cta-inner">
-        <div>
-          <h2 class="cta-title">
-            Own a local business?<br /><em>You belong here.</em>
-          </h2>
-          <p class="cta-sub">
-            Join hundreds of Treasure Valley businesses connecting with
-            customers who are actively looking for what you offer. Free to get
-            started.
-          </p>
-        </div>
-        <div class="cta-actions">
-          <a href="/submit" class="btn-gold">List Your Business →</a>
-          <a href="/about" class="btn-outline-white">Learn More</a>
-        </div>
+      <div class="favorites-footer">
+        <a href="/explore" class="favorites-footer-link">See every listing in the directory →</a>
       </div>
     </div>
   </section>
@@ -490,46 +467,22 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
-  <section class="how-section">
+  <!-- NOMINATE A SPOT -->
+  <section class="nominate-section">
     <div class="section-container">
-      <div class="section-header">
-        <span class="section-eyebrow">How It Works</span>
-        <h2 class="section-title">Simple by <em>design</em></h2>
-        <p class="section-sub">
-          Getting found — or finding your next favorite spot — has never been
-          easier.
+      <div class="nominate-inner">
+        <p class="section-eyebrow">Locals, your turn</p>
+        <h2 class="nominate-title">
+          Know a Boise spot we should write up?
+        </h2>
+        <p class="nominate-sub">
+          The best listings on the site got here because someone who loved a
+          place sent us a note. Coffee shops, mechanics, the family-owned
+          taqueria nobody talks about — we want to hear about all of them.
         </p>
-      </div>
-      <div class="how-grid">
-        <div class="how-item">
-          <div class="how-title">Browse or Search</div>
-          <p class="how-text">
-            Explore by category, neighborhood, or keyword. Every listing is
-            handpicked and verified by our team.
-          </p>
-        </div>
-        <div class="how-item">
-          <div class="how-title">Discover the Details</div>
-          <p class="how-text">
-            Get hours, location, photos, reviews, and everything you need to
-            decide — all in one place.
-          </p>
-        </div>
-        <div class="how-item">
-          <div class="how-title">Visit & Support Local</div>
-          <p class="how-text">
-            Show up, support an independent business, and leave a review to help
-            your neighbors find them too.
-          </p>
-        </div>
-        <div class="how-item">
-          <div class="how-title">Get Your Business Listed</div>
-          <p class="how-text">
-            Submit your business in minutes. Our team reviews every submission
-            to keep the directory curated and trustworthy.
-          </p>
-        </div>
+        <a href="/contact?type=nomination" class="nominate-cta">
+          Tell us about a hidden gem →
+        </a>
       </div>
     </div>
   </section>
@@ -562,22 +515,48 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       </div>
     </div>
   </section>
+  <!-- OWNER CTA — demoted footer strip -->
+  <section class="owner-strip">
+    <div class="section-container owner-strip-inner">
+      <div>
+        <p class="owner-strip-eyebrow">For business owners</p>
+        <h2 class="owner-strip-title">Run an independent Boise business?</h2>
+        <p class="owner-strip-sub">
+          List it on Hidden Gems. Free, no catch, reviewed personally before it
+          goes up.
+        </p>
+      </div>
+      <a href="/submit" class="owner-strip-cta">List your business →</a>
+    </div>
+  </section>
+
   <!-- CONTACT -->
   <section class="contact-section" id="contact">
     <div class="section-container">
       <div class="contact-inner">
         <div>
-          <p class="section-eyebrow">Get In Touch</p>
-          <h2 class="contact-lead">We'd love to <em>hear from you.</em></h2>
-          <p class="contact-sub">
+          <p class="section-eyebrow" id="contact-eyebrow">Get In Touch</p>
+          <h2 class="contact-lead" id="contact-lead">
+            We'd love to <em>hear from you.</em>
+          </h2>
+          <p class="contact-sub" id="contact-sub">
             Have a question, want to get your business listed, or just want to
             say hello — drop us a message and we'll get back to you.
           </p>
         </div>
         <form class="contact-form" id="contact-form">
+          <div class="form-field">
+            <label class="form-label" for="c-type">I'm reaching out about…</label>
+            <select class="form-input" id="c-type" name="type">
+              <option value="general">A general question</option>
+              <option value="nomination">A Boise spot you should feature</option>
+              <option value="business">My business</option>
+              <option value="press">Press / partnerships</option>
+            </select>
+          </div>
           <div class="form-row">
             <div class="form-field">
-              <label class="form-label" for="c-name">Name</label>
+              <label class="form-label" for="c-name">Your name</label>
               <input
                 class="form-input"
                 id="c-name"
@@ -610,7 +589,7 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
             />
           </div>
           <div class="form-field">
-            <label class="form-label" for="c-message">Message</label>
+            <label class="form-label" for="c-message" id="c-message-label">Message</label>
             <textarea
               class="form-textarea"
               id="c-message"
@@ -627,32 +606,38 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
   <script>
     import EmblaCarousel from "embla-carousel";
 
-    // Search tabs
-    document.querySelectorAll(".search-tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = (tab as HTMLElement).dataset.tab;
-        document
-          .querySelectorAll(".search-tab")
-          .forEach((t) => t.classList.remove("active"));
-        document
-          .querySelectorAll(".search-panel")
-          .forEach((p) => p.classList.remove("active"));
-        tab.classList.add("active");
-        document.getElementById(`tab-${target}`)?.classList.add("active");
-      });
-    });
+    // Contact form: react to ?type=nomination (or other types) in the URL —
+    // preselect the dropdown, swap the heading/sub copy, and scroll into view.
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedType = params.get("type");
+      if (!requestedType) return;
+      const typeSel = document.getElementById("c-type") as HTMLSelectElement | null;
+      const lead = document.getElementById("contact-lead");
+      const sub = document.getElementById("contact-sub");
+      const eyebrow = document.getElementById("contact-eyebrow");
+      const msgLabel = document.getElementById("c-message-label");
 
-    // Business carousel
-    const bizEl = document.getElementById("biz-carousel");
-    if (bizEl) {
-      const bizApi = EmblaCarousel(bizEl, { loop: false, align: "start" });
-      document
-        .getElementById("biz-prev")
-        ?.addEventListener("click", () => bizApi.scrollPrev());
-      document
-        .getElementById("biz-next")
-        ?.addEventListener("click", () => bizApi.scrollNext());
-    }
+      const valid = ["general", "nomination", "business", "press"];
+      const t = valid.includes(requestedType) ? requestedType : "general";
+      if (typeSel) typeSel.value = t;
+
+      if (t === "nomination") {
+        if (eyebrow) eyebrow.textContent = "Nominate a Hidden Gem";
+        if (lead) lead.innerHTML = "Tell us about <em>your favorite Boise spot.</em>";
+        if (sub)
+          sub.textContent =
+            "Drop the name, what makes it special, and anything we should know. We read every nomination personally.";
+        if (msgLabel) msgLabel.textContent = "What makes them worth featuring?";
+      }
+
+      // Scroll into view once we've swapped the copy
+      requestAnimationFrame(() => {
+        document
+          .getElementById("contact")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    })();
 
     // Events carousel
     const evtEl = document.getElementById("evt-carousel");
@@ -1554,6 +1539,356 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       NEW: hero CTAs, What-is, Local Favorites, restyled categories,
+       Nominate strip, demoted Owner CTA strip
+       ───────────────────────────────────────────────────────────── */
+
+    /* HERO CTAs (replaced the search box) */
+    .hero-ctas {
+      display: flex;
+      gap: 0.875rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+    .hero-cta-primary {
+      background: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+      font-weight: 600;
+      padding: 0.875rem 1.5rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.9375rem;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .hero-cta-primary:hover {
+      background: var(--color-gem-gold-light);
+      transform: translateY(-1px);
+    }
+    .hero-cta-secondary {
+      color: white;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      padding: 0.875rem 1.5rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .hero-cta-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* WHAT IS HIDDEN GEMS? */
+    .whatis-section {
+      background: var(--color-gem-mist);
+      padding: 5rem 1.5rem;
+    }
+    .whatis-container {
+      max-width: 760px;
+    }
+    .whatis-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--color-gem-text);
+      margin: 0.75rem 0 1.75rem;
+      line-height: 1.2;
+    }
+    .whatis-title em {
+      font-style: italic;
+      color: var(--color-gem-gold);
+    }
+    .whatis-body p {
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--color-gem-text-muted);
+      margin: 0 0 1.25rem;
+    }
+    .whatis-body p:last-child {
+      margin-bottom: 0;
+    }
+    .whatis-body strong {
+      color: var(--color-gem-text);
+      font-weight: 600;
+    }
+    .whatis-link {
+      color: var(--color-gem-gold);
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+    }
+    .whatis-link:hover {
+      color: var(--color-gem-gold-light);
+    }
+
+    /* Restyled CATEGORY CARDS */
+    .category-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1.25rem;
+      background: white;
+      border: 1.5px solid var(--color-gem-border);
+      border-radius: 14px;
+      text-decoration: none;
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .category-card:hover {
+      border-color: var(--color-gem-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+    }
+    .category-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .category-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .category-count {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-gem-text-subtle);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .category-name {
+      font-family: var(--font-display);
+      font-size: 1.1875rem;
+      font-weight: 600;
+      color: var(--color-gem-text);
+      line-height: 1.25;
+    }
+    .category-tagline {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--color-gem-text-muted);
+    }
+
+    /* LOCAL FAVORITES */
+    .favorites-section {
+      background: white;
+      padding: 5rem 1.5rem;
+    }
+    .favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .favorites-empty {
+      text-align: center;
+      color: var(--color-gem-text-muted);
+      padding: 3rem 0;
+    }
+    .fav-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--color-gem-mist);
+      border: 1.5px solid var(--color-gem-border);
+      border-radius: 14px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .fav-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--color-gem-gold);
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.06);
+    }
+    .fav-card-img {
+      aspect-ratio: 16 / 10;
+      background: var(--color-gem-stone);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .fav-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .fav-card-img-placeholder {
+      font-size: 3rem;
+      opacity: 0.4;
+    }
+    .fav-card-body {
+      padding: 1.125rem 1.25rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .fav-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-gem-text-subtle);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .fav-card-cat {
+      color: var(--color-gem-gold);
+    }
+    .fav-card-hood {
+      color: var(--color-gem-text-subtle);
+    }
+    .fav-card-price {
+      color: var(--color-gem-text-muted);
+    }
+    .fav-card-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-gem-text);
+      line-height: 1.25;
+      margin-bottom: 0.5rem;
+    }
+    .fav-card-blurb {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      color: var(--color-gem-text-muted);
+      margin: 0 0 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .fav-card-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+    }
+    .fav-card-rating {
+      color: var(--color-gem-gold);
+      letter-spacing: 0.05em;
+    }
+    .fav-card-rating-count {
+      color: var(--color-gem-text-subtle);
+      margin-left: 0.375rem;
+    }
+    .fav-card-link {
+      color: var(--color-gem-gold);
+      font-weight: 600;
+    }
+    .favorites-footer {
+      margin-top: 2.5rem;
+      text-align: center;
+    }
+    .favorites-footer-link {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-gem-gold);
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+    }
+    .favorites-footer-link:hover {
+      color: var(--color-gem-gold-light);
+    }
+
+    /* NOMINATE — community CTA strip */
+    .nominate-section {
+      background: var(--color-gem-mist);
+      padding: 4.5rem 1.5rem;
+    }
+    .nominate-inner {
+      max-width: 640px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .nominate-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.625rem, 3vw, 2.125rem);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--color-gem-text);
+      margin: 0.75rem 0 1rem;
+      line-height: 1.2;
+    }
+    .nominate-sub {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--color-gem-text-muted);
+      margin: 0 0 1.75rem;
+    }
+    .nominate-cta {
+      display: inline-block;
+      background: var(--color-gem-text);
+      color: white;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      padding: 0.875rem 1.625rem;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .nominate-cta:hover {
+      background: var(--color-gem-stone);
+      transform: translateY(-1px);
+    }
+
+    /* OWNER STRIP — demoted CTA above contact */
+    .owner-strip {
+      background: var(--color-gem-dark);
+      padding: 2.5rem 1.5rem;
+    }
+    .owner-strip-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .owner-strip-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-gem-gold);
+      font-weight: 600;
+      margin: 0 0 0.375rem;
+    }
+    .owner-strip-title {
+      font-family: var(--font-display);
+      font-size: 1.375rem;
+      font-weight: 600;
+      color: white;
+      margin: 0 0 0.375rem;
+      line-height: 1.2;
+    }
+    .owner-strip-sub {
+      font-size: 0.9375rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0;
+      max-width: 540px;
+    }
+    .owner-strip-cta {
+      background: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+      font-weight: 600;
+      padding: 0.75rem 1.375rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.9375rem;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+    .owner-strip-cta:hover {
+      background: var(--color-gem-gold-light);
     }
   </style>
 </PublicLayout>

@@ -66,6 +66,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       categoryId,
       subcategoryId: (body.subcategoryId as string) || null,
       bio: (body.bio as string) || null,
+      editorialBlurb: (body.editorialBlurb as string) || null,
       websiteUrl: (body.websiteUrl as string) || null,
       bookingUrl: (body.bookingUrl as string) || null,
       keywords: Array.isArray(body.keywords) ? (body.keywords as string[]) : [],

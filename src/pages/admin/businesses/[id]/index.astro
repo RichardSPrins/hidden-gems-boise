@@ -67,6 +67,52 @@ const categories = await db.query.category.findMany({
     </div>
   </div>
 
+  <!-- IMAGES -->
+  <section id="images-section" class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 max-w-3xl mb-6" data-business-id={biz.id}>
+    <div class="flex items-center justify-between gap-4">
+      <h2 class="font-display text-lg text-gem-text">Images</h2>
+      <label class="text-sm font-semibold text-gem-dark bg-gem-gold hover:bg-gem-gold-light px-3 py-1.5 rounded-lg cursor-pointer">
+        + Upload
+        <input id="image-upload-input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+      </label>
+    </div>
+    <p id="image-upload-status" class="text-xs text-gem-text-subtle hidden"></p>
+
+    <div id="images-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {biz.images.length === 0 ? (
+        <p class="col-span-full text-sm text-gem-text-muted py-4">No images yet. Upload to set a primary image for the listing.</p>
+      ) : (
+        biz.images
+          .slice()
+          .sort((a: any, b: any) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder)
+          .map((img: any) => (
+            <div class="border border-gem-border rounded-lg overflow-hidden bg-gem-mist" data-image-id={img.id}>
+              <div class="aspect-square bg-gem-stone overflow-hidden">
+                <img src={img.url} alt={img.alt ?? ""} class="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div class="p-2 space-y-1">
+                <input
+                  type="text"
+                  data-alt-input
+                  value={img.alt ?? ""}
+                  placeholder="Alt text"
+                  class="w-full text-xs px-2 py-1 rounded border border-gem-border bg-white"
+                />
+                <div class="flex items-center justify-between gap-2">
+                  {img.isPrimary ? (
+                    <span class="text-xs font-semibold text-gem-gold">★ Primary</span>
+                  ) : (
+                    <button type="button" data-set-primary class="text-xs text-gem-text-muted hover:text-gem-gold">Set primary</button>
+                  )}
+                  <button type="button" data-delete class="text-xs text-red-600 hover:underline">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))
+      )}
+    </div>
+  </section>
+
   <form id="edit-form" class="space-y-6 max-w-3xl" data-id={biz.id}>
     <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
       <h2 class="font-display text-lg text-gem-text">Edit details</h2>
@@ -99,6 +145,12 @@ const categories = await db.query.category.findMany({
       <div>
         <label class="block text-sm font-medium mb-1.5">Bio</label>
         <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">{biz.bio ?? ""}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Editorial blurb</label>
+        <textarea name="editorialBlurb" rows="3" maxlength="600" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="50–80 words. Owner story, what makes them worth visiting. Used on the home page grid.">{biz.editorialBlurb ?? ""}</textarea>
+        <p class="text-xs text-gem-text-subtle mt-1">Editorial-warm voice. Specific differentiators land harder than adjectives.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,6 +240,7 @@ const categories = await db.query.category.findMany({
       const payload = {
         name: fd.get("name"),
         bio: fd.get("bio") || null,
+        editorialBlurb: fd.get("editorialBlurb") || null,
         websiteUrl: fd.get("websiteUrl") || null,
         bookingUrl: fd.get("bookingUrl") || null,
         categoryId: fd.get("categoryId"),
@@ -226,6 +279,113 @@ const categories = await db.query.category.findMany({
       const res = await fetch(`/api/admin/businesses/${businessId}`, { method: "DELETE" });
       if (res.ok) window.location.href = "/admin/businesses";
       else alert("Delete failed.");
+    });
+
+    // ── Image management ───────────────────────────────────────────────
+    const uploadInput = document.getElementById("image-upload-input");
+    const uploadStatus = document.getElementById("image-upload-status");
+
+    function setStatus(msg, tone) {
+      uploadStatus.textContent = msg;
+      uploadStatus.className =
+        "text-xs mt-1 " +
+        (tone === "err" ? "text-red-600" : tone === "ok" ? "text-green-700" : "text-gem-text-muted");
+      uploadStatus.classList.remove("hidden");
+    }
+
+    uploadInput.addEventListener("change", async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setStatus("File is larger than 5 MB.", "err");
+        uploadInput.value = "";
+        return;
+      }
+      setStatus("Uploading…");
+
+      try {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("businessId", businessId);
+        const upRes = await fetch("/api/admin/upload", { method: "POST", body });
+        if (!upRes.ok) {
+          const data = await upRes.json().catch(() => ({}));
+          setStatus(data.error || "Upload failed.", "err");
+          uploadInput.value = "";
+          return;
+        }
+        const upData = await upRes.json();
+
+        // Attach to business — first image becomes primary automatically.
+        const existing = document.querySelectorAll("[data-image-id]").length;
+        const attachRes = await fetch(
+          `/api/admin/businesses/${businessId}/images`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: upData.url,
+              isPrimary: existing === 0,
+            }),
+          },
+        );
+        if (!attachRes.ok) {
+          setStatus("Uploaded but failed to attach to business.", "err");
+          return;
+        }
+        setStatus("Uploaded ✓ Reloading…", "ok");
+        window.location.reload();
+      } catch {
+        setStatus("Network error.", "err");
+        uploadInput.value = "";
+      }
+    });
+
+    document.querySelectorAll("[data-image-id]").forEach((card) => {
+      const imageId = card.dataset.imageId;
+      const altInput = card.querySelector("[data-alt-input]");
+      const setPrimaryBtn = card.querySelector("[data-set-primary]");
+      const deleteBtn = card.querySelector("[data-delete]");
+
+      // Debounced alt save on blur
+      altInput?.addEventListener("blur", async () => {
+        await fetch(`/api/admin/businesses/${businessId}/images/${imageId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alt: altInput.value }),
+        });
+      });
+
+      setPrimaryBtn?.addEventListener("click", async () => {
+        setPrimaryBtn.disabled = true;
+        const res = await fetch(
+          `/api/admin/businesses/${businessId}/images/${imageId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isPrimary: true }),
+          },
+        );
+        if (res.ok) window.location.reload();
+        else {
+          alert("Could not set primary.");
+          setPrimaryBtn.disabled = false;
+        }
+      });
+
+      deleteBtn?.addEventListener("click", async () => {
+        if (!confirm("Delete this image?")) return;
+        deleteBtn.disabled = true;
+        const res = await fetch(
+          `/api/admin/businesses/${businessId}/images/${imageId}`,
+          { method: "DELETE" },
+        );
+        if (res.ok) card.remove();
+        else {
+          alert("Delete failed.");
+          deleteBtn.disabled = false;
+        }
+      });
     });
   </script>
 </AdminLayout>

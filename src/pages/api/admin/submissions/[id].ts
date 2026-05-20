@@ -6,9 +6,12 @@ import {
   location,
   contactInfo,
   operatingHours,
+  category,
+  subcategory,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { slugify } from "@/lib/utils/slug";
+import { sendSubmissionToGhl } from "@/lib/ghl";
 
 function unauthorized() {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -46,6 +49,29 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
       .update(publicSubmission)
       .set({ status: "REJECTED", reviewedAt: new Date() })
       .where(eq(publicSubmission.id, id));
+
+    void sendSubmissionToGhl({
+      event: "submission.rejected",
+      submissionId: id,
+      ownerName: sub.ownerName,
+      ownerEmail: sub.ownerEmail,
+      ownerPhone: sub.phone ?? null,
+      business: {
+        name: sub.businessName,
+        email: sub.email,
+        phone: sub.phone,
+        website: sub.website,
+        bio: sub.bio,
+        pricePoint: sub.pricePoint,
+        address: sub.address,
+        city: sub.city,
+        state: sub.state,
+        zip: sub.zip,
+        neighborhood: sub.neighborhood,
+      },
+      notes: sub.notes,
+    });
+
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -138,6 +164,44 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
       .update(publicSubmission)
       .set({ status: "APPROVED", reviewedAt: new Date() })
       .where(eq(publicSubmission.id, id));
+
+    // Resolve category/subcategory names for GHL.
+    const cat = await db.query.category.findFirst({
+      where: eq(category.id, sub.categoryId),
+      columns: { name: true },
+    });
+    const subCat = sub.subcategoryId
+      ? await db.query.subcategory.findFirst({
+          where: eq(subcategory.id, sub.subcategoryId),
+          columns: { name: true },
+        })
+      : null;
+
+    void sendSubmissionToGhl({
+      event: "submission.approved",
+      submissionId: id,
+      businessId,
+      businessSlug: candidate,
+      ownerName: sub.ownerName,
+      ownerEmail: sub.ownerEmail,
+      ownerPhone: sub.phone ?? null,
+      business: {
+        name: sub.businessName,
+        email: sub.email,
+        phone: sub.phone,
+        website: sub.website,
+        bio: sub.bio,
+        pricePoint: sub.pricePoint,
+        address: sub.address,
+        city: sub.city,
+        state: sub.state,
+        zip: sub.zip,
+        neighborhood: sub.neighborhood,
+      },
+      categoryName: cat?.name ?? null,
+      subcategoryName: subCat?.name ?? null,
+      notes: sub.notes,
+    });
 
     return new Response(
       JSON.stringify({ ok: true, businessId, slug: candidate }),

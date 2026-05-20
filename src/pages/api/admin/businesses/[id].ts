@@ -28,6 +28,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
   const fields = [
     "name",
     "bio",
+    "editorialBlurb",
     "websiteUrl",
     "bookingUrl",
     "categoryId",
