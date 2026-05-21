@@ -1636,6 +1636,20 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       justify-content: center;
       margin-top: 1.5rem;
     }
+
+    /* Tablet + mobile: hero content left-aligned with a wider editorial feel. */
+    @media (max-width: 1024px) {
+      .hero-content {
+        text-align: left;
+      }
+      .hero-eyebrow::before,
+      .hero-eyebrow::after {
+        display: none;
+      }
+      .hero-ctas {
+        justify-content: flex-start;
+      }
+    }
     .hero-cta-primary {
       background: var(--color-gem-gold);
       color: var(--color-gem-dark);
