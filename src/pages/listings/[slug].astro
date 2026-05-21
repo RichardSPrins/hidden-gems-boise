@@ -195,7 +195,6 @@ const schemas = [
       <div class="info-bar-inner">
         {primaryLocation && (
           <div class="info-bar-item">
-            <span class="info-bar-icon">📍</span>
             <span>{primaryLocation.neighborhood ?? primaryLocation.city}, {primaryLocation.state}</span>
           </div>
         )}
@@ -427,7 +426,6 @@ const schemas = [
           <div class="contact-list">
             {primaryLocation && (
               <div class="contact-item">
-                <span class="contact-icon">📍</span>
                 <div>
                   <div>{primaryLocation.address}</div>
                   <div>{primaryLocation.city}, {primaryLocation.state} {primaryLocation.zip}</div>
@@ -555,7 +553,7 @@ const schemas = [
                 {r.images[0] ? (
                   <img src={r.images[0].url} alt={r.images[0].alt ?? r.name} loading="lazy" />
                 ) : (
-                  <span>{categoryIcons[r.category.name] ?? "📍"}</span>
+                  <span aria-hidden="true" />
                 )}
               </div>
               <div class="biz-card-body">

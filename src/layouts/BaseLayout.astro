@@ -128,7 +128,10 @@ const allSchemas = [createWebsiteSchema(), ...schemas];
     <slot name="head" />
   </head>
 
-  <body class={`bg-gem-mist text-gem-text antialiased ${bodyClass}`}>
+  <body
+    class={`bg-gem-mist text-gem-text antialiased ${bodyClass}`}
+    style="overflow-x: clip;"
+  >
     <!-- Skip to content -->
     <a
       href="#main-content"

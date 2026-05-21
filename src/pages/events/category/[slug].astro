@@ -156,7 +156,7 @@ const hasFilters =
 ---
 
 <PublicLayout
-  title={`${categoryConfig.label} in Boise`}
+  title={`${categoryConfig.label} happening in Boise, ID`}
   description={categoryConfig.description}
 >
   <!-- SLIM HERO -->
@@ -175,31 +175,13 @@ const hasFilters =
       </nav>
       <h1 class="events-hero-title">
         {categoryConfig.icon}
-        <em>{categoryConfig.label}</em>
+        <em>{categoryConfig.label}</em> happening in Boise, ID
       </h1>
       <p class="events-hero-sub">
         {categoryConfig.description} · {Number(count).toLocaleString()} upcoming {
           Number(count) === 1 ? "event" : "events"
         }
       </p>
-    </div>
-  </div>
-
-  <!-- CATEGORY CAROUSEL -->
-  <div class="cat-carousel-bar">
-    <div class="cat-carousel-track">
-      <a href="/events" class="cat-pill">All Events</a>
-      {
-        allCategories.map((cat) => (
-          <a
-            href={`/events/category/${cat.slug}`}
-            class:list={["cat-pill", cat.slug === slug && "cat-pill-active"]}
-          >
-            <span>{cat.icon}</span>
-            {cat.label}
-          </a>
-        ))
-      }
     </div>
   </div>
 
@@ -397,29 +379,19 @@ const hasFilters =
           }
         </p>
         <div class="results-controls">
-          <button
-            class="mobile-filter-btn"
-            id="mobile-filter-btn"
-            aria-label="Open filters"
-          >
-            ⚙ Filters {hasFilters && <span class="filter-dot" />}
+          <button class="mobile-filter-btn" id="mobile-filter-btn" aria-label="Open filters">
+            <span aria-hidden="true">⚙</span>
+            <span>Filters</span>
+            {hasFilters && <span class="filter-dot" />}
           </button>
-          <form method="get" action={`/events/category/${slug}`}>
+          <form method="get" action={`/events/category/${slug}`} class="sort-form">
             <input type="hidden" name="q" value={q} />
             <input type="hidden" name="date" value={dateRange} />
             <input type="hidden" name="neighborhood" value={neighborhood} />
             <input type="hidden" name="recurring" value={recurring} />
-            <select
-              name="sort"
-              class="sort-select"
-              onchange="this.form.submit()"
-            >
-              <option value="date" selected={sort === "date"}
-                >Soonest First</option
-              >
-              <option value="latest" selected={sort === "latest"}
-                >Latest First</option
-              >
+            <select name="sort" class="sort-select" aria-label="Sort" onchange="this.form.submit()">
+              <option value="date" selected={sort === "date"}>Soonest first</option>
+              <option value="latest" selected={sort === "latest"}>Latest first</option>
             </select>
           </form>
         </div>
@@ -667,11 +639,11 @@ const hasFilters =
 <style>
   .events-hero {
     position: relative;
-    height: 300px;
+    min-height: 300px;
     display: flex;
     align-items: flex-end;
     overflow: hidden;
-    padding-top: 4rem;
+    padding-top: 5.5rem;
   }
   .events-hero-bg {
     position: absolute;
@@ -725,6 +697,91 @@ const hasFilters =
   .events-hero-sub {
     color: rgba(255, 255, 255, 0.65);
     font-size: 0.9375rem;
+  }
+
+  @media (max-width: 768px) {
+    .cat-carousel-bar { display: none; }
+  }
+
+  /* REFINE BAR — sticky on mobile; events have no subcategories so the
+     left side is just empty space, actions go right. */
+  .refine-bar {
+    background: white;
+    border-bottom: 1px solid var(--color-gem-border);
+  }
+  .refine-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  .refine-pills-empty { flex: 1; }
+  .refine-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .refine-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.45rem 0.875rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    background: white;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-gem-text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .refine-btn:hover { border-color: var(--color-gem-gold); }
+  .refine-btn-icon { font-size: 0.875rem; line-height: 1; }
+  .refine-btn-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--color-gem-gold);
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  .refine-sort-select {
+    padding: 0.45rem 0.875rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--color-gem-text);
+    background: white;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path fill='%236b6b6b' d='M2 4l4 4 4-4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    padding-right: 1.75rem;
+  }
+  .refine-sort-select:focus { border-color: var(--color-gem-gold); }
+  @media (max-width: 1024px) {
+    .refine-bar {
+      position: sticky;
+      top: 64px;
+      z-index: 40;
+      box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+    }
+    .refine-bar-inner {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+  @media (max-width: 480px) {
+    .refine-sort-select { max-width: 130px; text-overflow: ellipsis; }
   }
 
   .cat-carousel-bar {
@@ -910,34 +967,25 @@ const hasFilters =
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
     gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
   }
   .results-count {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--color-gem-text-muted);
+    margin: 0;
   }
-  .results-count strong {
-    color: var(--color-gem-text);
-  }
+  .results-count strong { color: var(--color-gem-text); font-weight: 600; }
   .results-controls {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-  }
-  .sort-select {
-    padding: 0.5rem 0.875rem;
-    border: 1.5px solid var(--color-gem-border);
-    border-radius: 8px;
-    font-family: var(--font-body);
-    font-size: 0.875rem;
-    color: var(--color-gem-text);
-    background: white;
-    outline: none;
-    cursor: pointer;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
   .mobile-filter-btn {
-    display: none;
+    position: relative;
+    display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     padding: 0.5rem 0.875rem;
@@ -945,42 +993,57 @@ const hasFilters =
     border-radius: 8px;
     background: white;
     font-family: var(--font-body);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: var(--color-gem-text);
     cursor: pointer;
+    transition: border-color 0.15s;
   }
-  @media (max-width: 1024px) {
-    .mobile-filter-btn {
-      display: flex;
-    }
+  .mobile-filter-btn:hover { border-color: var(--color-gem-gold); }
+  .filter-dot { width: 8px; height: 8px; background: var(--color-gem-gold); border-radius: 50%; margin-left: 0.125rem; }
+  @media (min-width: 1025px) { .mobile-filter-btn { display: none; } }
+  .sort-select {
+    padding: 0.5rem 0.875rem;
+    border: 1.5px solid var(--color-gem-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--color-gem-text);
+    background: white;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path fill='%236b6b6b' d='M2 4l4 4 4-4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    padding-right: 1.75rem;
   }
-  .filter-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-gem-gold);
-    display: inline-block;
-    margin-left: 0.25rem;
-  }
+  .sort-select:focus { border-color: var(--color-gem-gold); }
+
+  /* Lighter, badge-style active filter chips. */
   .filter-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.375rem;
     margin-bottom: 1rem;
   }
   .filter-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.3rem 0.75rem;
-    background: rgba(201, 168, 76, 0.08);
-    border: 1px solid rgba(201, 168, 76, 0.25);
+    padding: 0.25rem 0.625rem;
+    background: var(--color-gem-mist-2);
+    border: none;
     border-radius: 100px;
-    font-size: 0.8rem;
-    color: var(--color-gem-gold);
+    font-size: 0.75rem;
+    color: var(--color-gem-text-muted);
     text-decoration: none;
     font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .filter-chip:hover {
+    background: var(--color-gem-border);
+    color: var(--color-gem-text);
   }
   .event-list {
     list-style: none;

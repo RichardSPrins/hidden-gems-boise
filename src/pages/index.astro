@@ -66,13 +66,19 @@ const categoryIcons: Record<string, string> = {
 // Editorial taglines per category — used on the home Browse-by-Category grid.
 // Update these alongside category name changes.
 const categoryTaglines: Record<string, string> = {
-  "Food & Drink": "Coffee, brunch, breweries, and the dive bars locals actually go to.",
-  "Health & Wellness": "Gyms, yoga, salons, and self-care that doesn't feel performative.",
+  "Food & Drink":
+    "Coffee, brunch, breweries, and the dive bars locals actually go to.",
+  "Health & Wellness":
+    "Gyms, yoga, salons, and self-care that doesn't feel performative.",
   Shopping: "Boutiques, vintage, art, gifts — when the chain just won't do.",
-  "Home Services": "The HVAC, the plumber, the painter — the ones who answer the phone.",
-  "Arts & Entertainment": "Galleries, venues, escape rooms — places to leave the house for.",
-  "Professional Services": "Lawyers, accountants, designers — local pros worth a real conversation.",
-  Education: "Tutors, music teachers, dance schools — for kids and adults alike.",
+  "Home Services":
+    "The HVAC, the plumber, the painter — the ones who answer the phone.",
+  "Arts & Entertainment":
+    "Galleries, venues, escape rooms — places to leave the house for.",
+  "Professional Services":
+    "Lawyers, accountants, designers — local pros worth a real conversation.",
+  Education:
+    "Tutors, music teachers, dance schools — for kids and adults alike.",
   Automotive: "Mechanics, detailers, body shops — without the upsell.",
 };
 
@@ -109,13 +115,15 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
 <PublicLayout>
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-bg" style={`background-image: url(${boiseHero.src})`}></div>
+    <div class="hero-bg" style={`background-image: url(${boiseHero.src})`}>
+    </div>
     <div class="hero-overlay"></div>
     <div class="hero-content">
       <p class="hero-eyebrow">A Boise directory, written by locals</p>
       <h1 class="hero-title">Sharing Boise's<br /><em>Hidden Gems</em>.</h1>
       <p class="hero-subtitle">
-        {totalApproved}+ independently owned spots across the Treasure Valley — vouched for, written up, and worth telling a friend about.
+        {totalApproved}+ independently owned spots across the Treasure Valley —
+        vouched for, written up, and worth telling a friend about.
       </p>
       <div class="hero-ctas">
         <a href="/explore" class="hero-cta-primary">Explore the directory →</a>
@@ -133,22 +141,22 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       </h2>
       <div class="whatis-body">
         <p>
-          Hidden Gems Boise exists for one reason: the independently owned businesses
-          that make this city feel like home shouldn't be the ones you have to scroll
-          past five pages of national chains to find.
+          Hidden Gems Boise exists for one reason: the independently owned
+          businesses that make this city feel like home shouldn't be the ones
+          you have to scroll past five pages of national chains to find.
         </p>
         <p>
-          Every listing on this site is independently owned, locally operated, and
-          here on its own merit. <strong>No national chains. No franchises.
-          No pay-to-play placement.</strong> If a place is featured, it's because
-          we think it's worth your time.
+          Every listing on this site is independently owned, locally operated,
+          and here on its own merit. <strong
+            >No national chains. No franchises. No pay-to-play placement.</strong
+          > If a place is featured, it's because we think it's worth your time.
         </p>
         <p>
-          New listings get a read from a real person before they go up. Every week,
-          we write up one business in depth as the
-          <a href="/gems" class="whatis-link">Gem of the Week</a> — owner story,
-          why it's worth visiting, what makes it different from whatever you'd
-          find on Yelp.
+          New listings get a read from a real person before they go up. Every
+          week, we write up one business in depth as the
+          <a href="/gems" class="whatis-link">Gem of the Week</a> — owner story, why
+          it's worth visiting, what makes it different from whatever you'd find on
+          Yelp.
         </p>
       </div>
     </div>
@@ -167,21 +175,34 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       <div class="categories-grid">
         {
           categories.map(
-            (cat: { id: string; name: string; slug: string; businessCount: number }) => (
+            (cat: {
+              id: string;
+              name: string;
+              slug: string;
+              businessCount: number;
+            }) => (
               <a href={`/explore/${cat.slug}`} class="category-card">
-                <div class="category-card-top">
-                  <span class="category-icon">
-                    {categoryIcons[cat.name] ?? "📍"}
-                  </span>
+                <div class="category-card-body">
+                  <span class="category-name">{cat.name}</span>
                   <span class="category-count">
                     {cat.businessCount}{" "}
                     {pluralize(cat.businessCount, "spot", "spots")}
                   </span>
+                  {categoryTaglines[cat.name] && (
+                    <span class="category-tagline">
+                      {categoryTaglines[cat.name]}
+                    </span>
+                  )}
                 </div>
-                <span class="category-name">{cat.name}</span>
-                {categoryTaglines[cat.name] && (
-                  <span class="category-tagline">{categoryTaglines[cat.name]}</span>
-                )}
+                <div class="category-card-footer">
+                  <span class="category-card-cta-label">Browse</span>
+                  <span class="category-card-cta-arrow" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
               </a>
             ),
           )
@@ -264,10 +285,14 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
                             )}
                           </div>
                           <div class="gemow-card-body">
-                            <span class="gemow-week-label">{gem.weekLabel}</span>
+                            <span class="gemow-week-label">
+                              {gem.weekLabel}
+                            </span>
                             <h4 class="gemow-card-headline">{gem.headline}</h4>
                             <div class="gemow-card-biz">
-                              <span class="gemow-biz-name">{gem.business.name}</span>
+                              <span class="gemow-biz-name">
+                                {gem.business.name}
+                              </span>
                               {gem.business.category && (
                                 <span class="gemow-biz-cat">
                                   · {gem.business.category.name}
@@ -275,7 +300,9 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
                               )}
                             </div>
                             {gemPreview(gem) && (
-                              <p class="gemow-card-excerpt">{gemPreview(gem)}</p>
+                              <p class="gemow-card-excerpt">
+                                {gemPreview(gem)}
+                              </p>
                             )}
                           </div>
                         </a>
@@ -310,69 +337,76 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
         </p>
       </div>
 
-      {trending.length === 0 ? (
-        <p class="favorites-empty">Listings coming soon.</p>
-      ) : (
-        <div class="favorites-grid">
-          {trending.map((biz: any) => {
-            const location = biz.locations?.[0];
-            const blurb = biz.editorialBlurb || biz.bio;
-            const neighborhood = location?.neighborhood;
-            return (
-              <a href={`/listings/${biz.slug}`} class="fav-card">
-                <div class="fav-card-img">
-                  {biz.images?.[0] ? (
-                    <img
-                      src={biz.images[0].url}
-                      alt={biz.images[0].alt ?? biz.name}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span class="fav-card-img-placeholder">
-                      {categoryIcons[biz.category?.name] ?? "📍"}
-                    </span>
-                  )}
-                </div>
-                <div class="fav-card-body">
-                  <div class="fav-card-meta">
-                    <span class="fav-card-cat">
-                      {biz.category?.name}
-                      {neighborhood && (
-                        <span class="fav-card-hood"> · {neighborhood}</span>
+      {
+        trending.length === 0 ? (
+          <p class="favorites-empty">Listings coming soon.</p>
+        ) : (
+          <div class="favorites-grid">
+            {trending.map((biz: any) => {
+              const location = biz.locations?.[0];
+              const blurb = biz.editorialBlurb || biz.bio;
+              const neighborhood = location?.neighborhood;
+              return (
+                <a href={`/listings/${biz.slug}`} class="fav-card">
+                  <div class="fav-card-img">
+                    {biz.images?.[0] ? (
+                      <img
+                        src={biz.images[0].url}
+                        alt={biz.images[0].alt ?? biz.name}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span
+                        class="fav-card-img-placeholder"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
+                  <div class="fav-card-body">
+                    <div class="fav-card-meta">
+                      <span class="fav-card-cat">
+                        {biz.category?.name}
+                        {neighborhood && (
+                          <span class="fav-card-hood"> · {neighborhood}</span>
+                        )}
+                      </span>
+                      {biz.pricePoint && (
+                        <span class="fav-card-price">
+                          {priceMap[biz.pricePoint]}
+                        </span>
                       )}
-                    </span>
-                    {biz.pricePoint && (
-                      <span class="fav-card-price">
-                        {priceMap[biz.pricePoint]}
-                      </span>
-                    )}
+                    </div>
+                    <div class="fav-card-name">{biz.name}</div>
+                    {blurb && <p class="fav-card-blurb">{blurb}</p>}
+                    <div class="fav-card-footer">
+                      {biz.reviewCount > 0 && (
+                        <span class="fav-card-rating">
+                          {renderStars(biz.averageRating)}
+                          <span class="fav-card-rating-count">
+                            ({biz.reviewCount})
+                          </span>
+                        </span>
+                      )}
+                      <span class="fav-card-link">Read more →</span>
+                    </div>
                   </div>
-                  <div class="fav-card-name">{biz.name}</div>
-                  {blurb && <p class="fav-card-blurb">{blurb}</p>}
-                  <div class="fav-card-footer">
-                    {biz.reviewCount > 0 && (
-                      <span class="fav-card-rating">
-                        {renderStars(biz.averageRating)}
-                        <span class="fav-card-rating-count">({biz.reviewCount})</span>
-                      </span>
-                    )}
-                    <span class="fav-card-link">Read more →</span>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      )}
+                </a>
+              );
+            })}
+          </div>
+        )
+      }
 
       <div class="favorites-footer">
-        <a href="/explore" class="favorites-footer-link">See every listing in the directory →</a>
+        <a href="/explore" class="favorites-footer-link"
+          >See every listing in the directory →</a
+        >
       </div>
     </div>
   </section>
 
   <!-- TRUST SIGNALS -->
-  <section class="trust-section">
+  <!-- <section class="trust-section">
     <div class="section-container">
       <div class="trust-grid">
         <div class="trust-item">
@@ -402,7 +436,7 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
         </div>
       </div>
     </div>
-  </section>
+  </section> -->
 
   <!-- UPCOMING EVENTS -->
   <section class="carousel-section dark">
@@ -472,9 +506,7 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     <div class="section-container">
       <div class="nominate-inner">
         <p class="section-eyebrow">Locals, your turn</p>
-        <h2 class="nominate-title">
-          Know a Boise spot we should write up?
-        </h2>
+        <h2 class="nominate-title">Know a Boise spot we should write up?</h2>
         <p class="nominate-sub">
           The best listings on the site got here because someone who loved a
           place sent us a note. Coffee shops, mechanics, the family-owned
@@ -546,10 +578,13 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
         </div>
         <form class="contact-form" id="contact-form">
           <div class="form-field">
-            <label class="form-label" for="c-type">I'm reaching out about…</label>
+            <label class="form-label" for="c-type"
+              >I'm reaching out about…</label
+            >
             <select class="form-input" id="c-type" name="type">
               <option value="general">A general question</option>
-              <option value="nomination">A Boise spot you should feature</option>
+              <option value="nomination">A Boise spot you should feature</option
+              >
               <option value="business">My business</option>
               <option value="press">Press / partnerships</option>
             </select>
@@ -589,7 +624,9 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
             />
           </div>
           <div class="form-field">
-            <label class="form-label" for="c-message" id="c-message-label">Message</label>
+            <label class="form-label" for="c-message" id="c-message-label"
+              >Message</label
+            >
             <textarea
               class="form-textarea"
               id="c-message"
@@ -612,7 +649,9 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       const params = new URLSearchParams(window.location.search);
       const requestedType = params.get("type");
       if (!requestedType) return;
-      const typeSel = document.getElementById("c-type") as HTMLSelectElement | null;
+      const typeSel = document.getElementById(
+        "c-type",
+      ) as HTMLSelectElement | null;
       const lead = document.getElementById("contact-lead");
       const sub = document.getElementById("contact-sub");
       const eyebrow = document.getElementById("contact-eyebrow");
@@ -624,7 +663,8 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
 
       if (t === "nomination") {
         if (eyebrow) eyebrow.textContent = "Nominate a Hidden Gem";
-        if (lead) lead.innerHTML = "Tell us about <em>your favorite Boise spot.</em>";
+        if (lead)
+          lead.innerHTML = "Tell us about <em>your favorite Boise spot.</em>";
         if (sub)
           sub.textContent =
             "Drop the name, what makes it special, and anything we should know. We read every nomination personally.";
@@ -955,6 +995,48 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     .categories-section {
       background: white;
       padding: 5rem 2rem;
+    }
+
+    /* ── Mobile sweep ──
+       Sections drop their horizontal padding to 0 — the inner .section-container
+       (which is 1rem on mobile) is the ONE source of horizontal gutter. Avoids
+       compound padding stacking up to 32–64px from each side.
+       Card-internal padding also tightens. Long excerpts clamp to 4 lines. */
+    @media (max-width: 768px) {
+      .categories-section,
+      .carousel-section,
+      .cta-section,
+      .trust-section,
+      .how-section,
+      .faq-section,
+      .contact-section,
+      .gemow-section,
+      .whatis-section,
+      .favorites-section,
+      .nominate-section,
+      .owner-strip {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      /* Card internal padding eased on mobile. */
+      .gemow-featured-body { padding: 1.25rem !important; }
+      .fav-card-body { padding: 0.875rem 1rem 1rem !important; }
+      .category-card { padding: 1rem !important; min-height: 0 !important; }
+
+      /* Long-form excerpts clamp on mobile so cards don't run a page tall. */
+      .gemow-featured-excerpt {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .fav-card-blurb { -webkit-line-clamp: 3 !important; }
+    }
+
+    /* favorites-grid: use min() so the minmax never exceeds viewport on
+       narrow screens (was overflowing on <320px). */
+    .favorites-grid {
+      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     }
 
     .categories-grid {
@@ -1562,7 +1644,9 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       border-radius: 999px;
       text-decoration: none;
       font-size: 0.9375rem;
-      transition: background 0.15s ease, transform 0.15s ease;
+      transition:
+        background 0.15s ease,
+        transform 0.15s ease;
     }
     .hero-cta-primary:hover {
       background: var(--color-gem-gold-light);
@@ -1630,34 +1714,28 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     .category-card {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      padding: 1.25rem;
+      justify-content: space-between;
+      gap: 1.25rem;
+      padding: 1.375rem;
       background: white;
       border: 1.5px solid var(--color-gem-border);
       border-radius: 14px;
       text-decoration: none;
-      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      min-height: 190px;
+      transition:
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
     }
     .category-card:hover {
       border-color: var(--color-gem-gold);
       transform: translateY(-2px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.06);
     }
-    .category-card-top {
+    .category-card-body {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .category-icon {
-      font-size: 1.5rem;
-      line-height: 1;
-    }
-    .category-count {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--color-gem-text-subtle);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      flex-direction: column;
+      gap: 0.5rem;
     }
     .category-name {
       font-family: var(--font-display);
@@ -1666,10 +1744,62 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       color: var(--color-gem-text);
       line-height: 1.25;
     }
+    .category-count {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-gem-text-subtle);
+    }
     .category-tagline {
       font-size: 0.875rem;
-      line-height: 1.5;
+      line-height: 1.55;
       color: var(--color-gem-text-muted);
+      margin-top: 0.125rem;
+    }
+    .category-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .category-card-cta-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-gem-text-subtle);
+      transition: color 0.2s ease;
+    }
+    .category-card-cta-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-gem-border);
+      color: var(--color-gem-text-muted);
+      transition:
+        transform 0.25s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .category-card-cta-arrow svg {
+      transition: transform 0.25s ease;
+    }
+    .category-card:hover .category-card-cta-label {
+      color: var(--color-gem-gold);
+    }
+    .category-card:hover .category-card-cta-arrow {
+      background: var(--color-gem-gold);
+      border-color: var(--color-gem-gold);
+      color: var(--color-gem-dark);
+    }
+    .category-card:hover .category-card-cta-arrow svg {
+      transform: translateX(2px);
     }
 
     /* LOCAL FAVORITES */
@@ -1697,7 +1827,10 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       overflow: hidden;
       text-decoration: none;
       color: inherit;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
     }
     .fav-card:hover {
       transform: translateY(-3px);
@@ -1833,7 +1966,9 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       padding: 0.875rem 1.625rem;
       border-radius: 999px;
       text-decoration: none;
-      transition: background 0.15s ease, transform 0.15s ease;
+      transition:
+        background 0.15s ease,
+        transform 0.15s ease;
     }
     .nominate-cta:hover {
       background: var(--color-gem-stone);

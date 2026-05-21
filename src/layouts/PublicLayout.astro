@@ -12,10 +12,21 @@ export interface Props extends BaseProps {
 const { transparentNav = false, ...baseProps } = Astro.props;
 
 const navLinks = [
-  { label: "Explore", href: "/explore" },
   { label: "Events", href: "/events" },
   { label: "Gem of the Week", href: "/gems" },
   { label: "Blog", href: "/blog" },
+];
+
+// Top-level categories surfaced in the nav. Keep in sync with seed.ts.
+const navCategories: { name: string; slug: string }[] = [
+  { name: "Food & Drink", slug: "food-and-drink" },
+  { name: "Health & Wellness", slug: "health-and-wellness" },
+  { name: "Shopping", slug: "shopping" },
+  { name: "Home Services", slug: "home-services" },
+  { name: "Arts & Entertainment", slug: "arts-and-entertainment" },
+  { name: "Professional Services", slug: "professional-services" },
+  { name: "Education", slug: "education" },
+  { name: "Automotive", slug: "automotive" },
 ];
 
 const user = Astro.locals.user;
@@ -53,6 +64,50 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
         aria-label="Main navigation"
       >
         <ul class="flex items-center gap-8 list-none m-0 p-0">
+          <li class="nav-categories">
+            <button
+              type="button"
+              class="nav-categories-trigger text-sm font-medium tracking-wide text-white/80 hover:text-gem-gold transition-colors inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0"
+              aria-haspopup="true"
+              aria-expanded="false"
+              id="nav-categories-btn"
+            >
+              Explore Businesses
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 12 12"
+                aria-hidden="true"
+              >
+                <path fill="currentColor" d="M2 4l4 4 4-4z"></path>
+              </svg>
+            </button>
+            <div
+              class="nav-categories-panel"
+              id="nav-categories-panel"
+              role="menu"
+              aria-hidden="true"
+            >
+              <div class="nav-categories-grid">
+                {
+                  navCategories.map((cat) => (
+                    <a
+                      href={`/explore/${cat.slug}`}
+                      class="nav-categories-item"
+                      role="menuitem"
+                    >
+                      {cat.name}
+                    </a>
+                  ))
+                }
+              </div>
+              <div class="nav-categories-footer">
+                <a href="/explore" class="nav-categories-all"
+                  >View all listings →</a
+                >
+              </div>
+            </div>
+          </li>
           {
             navLinks.map((link) => (
               <li>
@@ -66,21 +121,23 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
             ))
           }
         </ul>
-        {user ? (
-          <a
-            href={accountHref}
-            class="text-sm font-medium text-white/80 hover:text-gem-gold transition-colors no-underline"
-          >
-            {accountLabel}
-          </a>
-        ) : (
-          <a
-            href="/auth/login"
-            class="text-sm font-medium text-white/80 hover:text-gem-gold transition-colors no-underline"
-          >
-            Sign In
-          </a>
-        )}
+        {
+          user ? (
+            <a
+              href={accountHref}
+              class="text-sm font-medium text-white/80 hover:text-gem-gold transition-colors no-underline"
+            >
+              {accountLabel}
+            </a>
+          ) : (
+            <a
+              href="/auth/login"
+              class="text-sm font-medium text-white/80 hover:text-gem-gold transition-colors no-underline"
+            >
+              Sign In
+            </a>
+          )
+        }
         <a
           href="/submit"
           class="px-5 py-2 rounded-full bg-gem-gold text-gem-dark text-sm font-semibold hover:bg-gem-gold-light transition-colors no-underline"
@@ -126,6 +183,28 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
             </a>
           ))
         }
+
+        <details class="mobile-categories" name="mobile-section">
+          <summary
+            class="text-white/80 hover:text-gem-gold text-base font-medium transition-colors py-2 border-b border-white/5 cursor-pointer flex items-center justify-between"
+          >
+            <span>Explore Businesses</span>
+            <span class="mobile-categories-caret">▾</span>
+          </summary>
+          <div class="mobile-categories-list">
+            {
+              navCategories.map((cat) => (
+                <a href={`/explore/${cat.slug}`} class="mobile-categories-item">
+                  {cat.name}
+                </a>
+              ))
+            }
+            <a href="/explore" class="mobile-categories-all"
+              >View all listings →</a
+            >
+          </div>
+        </details>
+
         <a
           href="/submit"
           class="mt-2 px-5 py-3 rounded-full bg-gem-gold text-gem-dark text-sm font-semibold text-center hover:bg-gem-gold-light transition-colors no-underline"
@@ -133,36 +212,42 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
           List Your Business
         </a>
         <div class="flex items-center gap-4 mt-2 pt-4 border-t border-white/10">
-          {user ? (
-            <>
-              <a
-                href={accountHref}
-                class="text-white/60 hover:text-white text-sm transition-colors no-underline"
-              >
-                {accountLabel}
-              </a>
-              <span class="text-white/20">|</span>
-              <button type="button" data-sign-out class="text-white/60 hover:text-white text-sm transition-colors bg-transparent border-0 cursor-pointer p-0">
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <a
-                href="/auth/login"
-                class="text-white/60 hover:text-white text-sm transition-colors no-underline"
-              >
-                Sign In
-              </a>
-              <span class="text-white/20">|</span>
-              <a
-                href="/auth/sign-up"
-                class="text-white/60 hover:text-white text-sm transition-colors no-underline"
-              >
-                Create Account
-              </a>
-            </>
-          )}
+          {
+            user ? (
+              <>
+                <a
+                  href={accountHref}
+                  class="text-white/60 hover:text-white text-sm transition-colors no-underline"
+                >
+                  {accountLabel}
+                </a>
+                <span class="text-white/20">|</span>
+                <button
+                  type="button"
+                  data-sign-out
+                  class="text-white/60 hover:text-white text-sm transition-colors bg-transparent border-0 cursor-pointer p-0"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/auth/login"
+                  class="text-white/60 hover:text-white text-sm transition-colors no-underline"
+                >
+                  Sign In
+                </a>
+                <span class="text-white/20">|</span>
+                <a
+                  href="/auth/sign-up"
+                  class="text-white/60 hover:text-white text-sm transition-colors no-underline"
+                >
+                  Create Account
+                </a>
+              </>
+            )
+          }
         </div>
       </nav>
     </div>
@@ -174,9 +259,9 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
   <!-- FOOTER -->
   <footer slot="footer" class="bg-gem-dark border-t border-gem-border-dark">
     <div class="max-w-7xl mx-auto px-6 py-16">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-x-8 gap-y-10 mb-12">
         <!-- Brand -->
-        <div class="md:col-span-1">
+        <div class="col-span-2 md:col-span-3 lg:col-span-4 lg:pr-6">
           <a
             href="/"
             class="font-display text-2xl font-semibold text-white no-underline"
@@ -189,8 +274,31 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
           </p>
         </div>
 
+        <!-- Categories -->
+        <div class="lg:col-span-3">
+          <h3
+            class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
+          >
+            Categories
+          </h3>
+          <ul class="grid grid-cols-1 gap-3 list-none m-0 p-0">
+            {
+              navCategories.map((cat) => (
+                <li>
+                  <a
+                    href={`/explore/${cat.slug}`}
+                    class="text-sm text-white/50 hover:text-gem-gold transition-colors no-underline"
+                  >
+                    {cat.name}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
         <!-- Explore -->
-        <div>
+        <div class="lg:col-span-2">
           <h3
             class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
           >
@@ -199,7 +307,7 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
           <ul class="flex flex-col gap-3 list-none m-0 p-0">
             {
               [
-                { label: "All Businesses", href: "/explore" },
+                { label: "All Listings", href: "/explore" },
                 { label: "Events", href: "/events" },
                 { label: "Gem of the Week", href: "/gems" },
                 { label: "Blog", href: "/blog" },
@@ -218,7 +326,7 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
         </div>
 
         <!-- Business -->
-        <div>
+        <div class="lg:col-span-2">
           <h3
             class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
           >
@@ -247,7 +355,7 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
         </div>
 
         <!-- Legal -->
-        <div>
+        <div class="lg:col-span-1">
           <h3
             class="text-xs font-semibold tracking-widest uppercase text-gem-gold mb-4"
           >
@@ -256,8 +364,8 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
           <ul class="flex flex-col gap-3 list-none m-0 p-0">
             {
               [
-                { label: "Terms of Service", href: "/terms" },
-                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Terms", href: "/terms" },
+                { label: "Privacy", href: "/privacy" },
               ].map((link) => (
                 <li>
                   <a
@@ -307,6 +415,140 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     box-shadow: 0 1px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ── CATEGORIES NAV DROPDOWN — desktop ── */
+  .nav-categories {
+    position: relative;
+  }
+  .nav-categories-panel {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    background: #fff;
+    border-radius: 14px;
+    box-shadow:
+      0 24px 64px rgba(0, 0, 0, 0.18),
+      0 2px 4px rgba(0, 0, 0, 0.04);
+    padding: 1rem;
+    min-width: 540px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      visibility 0.18s;
+    z-index: 60;
+  }
+  /* Invisible bridge above the panel so the cursor can travel from trigger
+     to panel without hover lapsing across the visual gap. */
+  .nav-categories-panel::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -0.875rem;
+    height: 0.875rem;
+  }
+  .nav-categories.open .nav-categories-panel,
+  .nav-categories:hover .nav-categories-panel,
+  .nav-categories:focus-within .nav-categories-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+  .nav-categories-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+  }
+  .nav-categories-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    text-decoration: none;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .nav-categories-item:hover {
+    background: #f5f2ee;
+    color: #c9a84c;
+  }
+  .nav-categories-icon {
+    font-size: 1.125rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .nav-categories-footer {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e4e0da;
+    text-align: center;
+  }
+  .nav-categories-all {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #c9a84c;
+    text-decoration: none;
+  }
+  .nav-categories-all:hover {
+    color: #e8c97a;
+  }
+
+  /* ── CATEGORIES — mobile accordion ── */
+  .mobile-categories {
+    display: block;
+  }
+  .mobile-categories summary {
+    list-style: none;
+  }
+  .mobile-categories summary::-webkit-details-marker {
+    display: none;
+  }
+  .mobile-categories-caret {
+    color: rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s ease;
+    font-size: 0.875rem;
+  }
+  .mobile-categories[open] .mobile-categories-caret {
+    transform: rotate(180deg);
+  }
+  .mobile-categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 0 0.25rem 1rem;
+  }
+  .mobile-categories-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0;
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .mobile-categories-item:hover {
+    color: #c9a84c;
+  }
+  .mobile-categories-all {
+    margin-top: 0.5rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #c9a84c;
+    text-decoration: none;
   }
 </style>
 
@@ -368,5 +610,33 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
       } catch {}
       window.location.href = "/";
     });
+  });
+
+  // Desktop "Categories" nav dropdown — hover handles most cases via CSS, but
+  // we also support click-to-toggle for keyboard/touch users.
+  const catTrigger = document.getElementById("nav-categories-btn");
+  const catContainer = catTrigger?.closest(".nav-categories");
+  const catPanel = document.getElementById("nav-categories-panel");
+  catTrigger?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const isOpen = catContainer?.classList.toggle("open");
+    catTrigger.setAttribute("aria-expanded", String(Boolean(isOpen)));
+    catPanel?.setAttribute("aria-hidden", String(!isOpen));
+  });
+  // Close on outside click
+  document.addEventListener("click", (e) => {
+    if (!catContainer?.contains(e.target as Node)) {
+      catContainer?.classList.remove("open");
+      catTrigger?.setAttribute("aria-expanded", "false");
+      catPanel?.setAttribute("aria-hidden", "true");
+    }
+  });
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      catContainer?.classList.remove("open");
+      catTrigger?.setAttribute("aria-expanded", "false");
+      catPanel?.setAttribute("aria-hidden", "true");
+    }
   });
 </script>

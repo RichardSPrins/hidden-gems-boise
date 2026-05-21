@@ -487,7 +487,17 @@ const writeupExcerpt = spotlight.shortDescription ?? stripMarkdown(spotlight.wri
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
-    flex-shrink: 0;
+  }
+  /* On mobile the dark CTA card stacks its buttons full-width so neither one
+     can overflow the card. */
+  @media (max-width: 640px) {
+    .gem-visit-cta { padding: 1.25rem; }
+    .gem-visit-actions { width: 100%; flex-direction: column; }
+    .gem-visit-actions > a {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
   }
 
   .gem-nominate {
@@ -507,6 +517,15 @@ const writeupExcerpt = spotlight.shortDescription ?? stripMarkdown(spotlight.wri
     gap: 1.25rem;
     position: sticky;
     top: 100px;
+  }
+  /* On mobile the sidebar stacks above the article (via `order: -1`) — sticky
+     in that context would float over the article as the user scrolls. Drop
+     sticky below the two-column breakpoint. */
+  @media (max-width: 1024px) {
+    .gem-sidebar {
+      position: static;
+      top: auto;
+    }
   }
   .sidebar-card {
     background: white;

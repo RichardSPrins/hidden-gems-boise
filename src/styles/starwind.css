@@ -195,6 +195,13 @@
   padding-right: 2rem;
 }
 
+@media (max-width: 768px) {
+  .section-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 .section-py { padding-top: 5rem; padding-bottom: 5rem; }
 .section-py-sm { padding-top: 3rem; padding-bottom: 3rem; }
 .section-py-lg { padding-top: 7rem; padding-bottom: 7rem; }
