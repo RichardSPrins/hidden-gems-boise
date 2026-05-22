@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import { getResend } from "@/lib/resend";
 
-const FROM = process.env.CONTACT_FROM_EMAIL ?? "Hidden Gems Boise <hello@hiddengemsboise.com>";
+const FROM =
+  process.env.CONTACT_FROM_EMAIL ??
+  "Hidden Gems Boise <hello@marketing.hiddengemsboise.com>";
 const INBOX = process.env.CONTACT_INBOX_EMAIL;
 
 function escapeHtml(s: string) {
@@ -76,10 +78,13 @@ export const POST: APIRoute = async ({ request }) => {
   `;
 
   const tagPrefix =
-    type === "nomination" ? "Nomination" :
-    type === "business" ? "Business" :
-    type === "press" ? "Press" :
-    "Hidden Gems";
+    type === "nomination"
+      ? "Nomination"
+      : type === "business"
+        ? "Business"
+        : type === "press"
+          ? "Press"
+          : "Hidden Gems";
 
   try {
     await resend.emails.send({

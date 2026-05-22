@@ -397,46 +397,323 @@ const writeupExcerpt = spotlight.shortDescription ?? stripMarkdown(spotlight.wri
     margin-bottom: 1.25rem;
   }
 
+  /* ─────────────────────────────────────────────────────────────
+     EDITORIAL MARKDOWN — .gem-writeup
+     ─────────────────────────────────────────────────────────────
+     Content is injected by `set:html` from marked.parse(), so Astro's
+     scoped CSS can't reach child elements. The `:global()` wrapper makes
+     child selectors apply to the unscoped HTML while keeping `.gem-writeup`
+     itself as the scoped anchor.
+
+     Treatment is editorial-magazine: ample whitespace, display headings,
+     gold accents, drop cap on the lede paragraph, pull-quote blockquote,
+     tasteful tables, kbd / mark / del / sub / sup details.
+
+     Vertical rhythm: every direct child gets a baseline `margin-top` so the
+     flow looks consistent regardless of element type. Per-element overrides
+     adjust the rhythm where the visual needs more breathing room (after
+     headings, around blockquotes, around hr).
+     ───────────────────────────────────────────────────────────── */
   .gem-writeup {
     font-size: 1.0625rem;
-    line-height: 1.8;
+    line-height: 1.75;
     color: var(--color-gem-text);
   }
-  .gem-writeup > * + * { margin-top: 1rem; }
-  .gem-writeup h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-top: 2rem; }
-  .gem-writeup h3 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; }
-  .gem-writeup h4 { font-size: 1.0625rem; font-weight: 700; margin-top: 1.25rem; }
-  .gem-writeup p { margin: 0; }
-  .gem-writeup a { color: var(--color-gem-gold); text-decoration: underline; }
-  .gem-writeup a:hover { text-decoration: none; }
-  .gem-writeup ul, .gem-writeup ol { padding-left: 1.5rem; }
-  .gem-writeup ul { list-style: disc; }
-  .gem-writeup ol { list-style: decimal; }
-  .gem-writeup li + li { margin-top: 0.35rem; }
-  .gem-writeup blockquote {
-    border-left: 3px solid var(--color-gem-gold);
-    padding: 0.25rem 0 0.25rem 1rem;
-    color: var(--color-gem-text-muted);
-    font-style: italic;
+
+  /* Vertical rhythm — every block gets gap above. Overridden below for
+     the first child (no top margin) and around standout elements. */
+  .gem-writeup :global(> * + *) { margin-top: 1.25rem; }
+  .gem-writeup :global(> *:first-child) { margin-top: 0; }
+
+  /* ── HEADINGS ── */
+  .gem-writeup :global(h1) {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--color-gem-text);
+    margin-top: 2.75rem;
+    margin-bottom: 0.25rem;
   }
-  .gem-writeup code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.92em;
-    background: var(--color-gem-mist);
+  .gem-writeup :global(h2) {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.4vw, 1.65rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    color: var(--color-gem-text);
+    margin-top: 2.5rem;
+    margin-bottom: 0.25rem;
+    /* Subtle gold accent under H2 — magazine-feel section break. */
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-gem-border);
+  }
+  .gem-writeup :global(h3) {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-gem-text);
+    margin-top: 2rem;
+    margin-bottom: 0.25rem;
+  }
+  .gem-writeup :global(h4) {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-gem-text);
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+    text-transform: none;
+  }
+  .gem-writeup :global(h5) {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-gem-text-subtle);
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .gem-writeup :global(h6) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-gem-gold);
+    margin-top: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  /* Tighten the gap between a heading and the paragraph that follows. */
+  .gem-writeup :global(h1 + p),
+  .gem-writeup :global(h2 + p),
+  .gem-writeup :global(h3 + p),
+  .gem-writeup :global(h4 + p),
+  .gem-writeup :global(h5 + p),
+  .gem-writeup :global(h6 + p) { margin-top: 0.625rem; }
+
+  /* ── PARAGRAPHS + LEDE DROP CAP ── */
+  .gem-writeup :global(p) {
+    margin: 0;
+    color: var(--color-gem-text);
+  }
+  /* Drop cap on the first paragraph — only when it directly leads the
+     article (not after a heading). Gold display font, classic magazine. */
+  .gem-writeup :global(> p:first-child::first-letter) {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-gem-gold);
+    float: left;
+    font-size: 3.2em;
+    line-height: 0.9;
+    padding-right: 0.5rem;
+    padding-top: 0.4rem;
+    margin-bottom: -0.2rem;
+  }
+
+  /* ── INLINE TEXT ── */
+  .gem-writeup :global(strong) { font-weight: 700; color: var(--color-gem-text); }
+  .gem-writeup :global(em) { font-style: italic; }
+  .gem-writeup :global(del),
+  .gem-writeup :global(s) { color: var(--color-gem-text-subtle); text-decoration: line-through; }
+  .gem-writeup :global(ins),
+  .gem-writeup :global(u) { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  .gem-writeup :global(mark) {
+    background: linear-gradient(transparent 60%, rgba(201, 168, 76, 0.35) 60%);
+    color: inherit;
+    padding: 0 0.1em;
+  }
+  .gem-writeup :global(small) { font-size: 0.875em; color: var(--color-gem-text-muted); }
+  .gem-writeup :global(sub),
+  .gem-writeup :global(sup) { font-size: 0.75em; line-height: 0; }
+  .gem-writeup :global(abbr[title]) { text-decoration: underline dotted; cursor: help; }
+
+  /* ── LINKS ── */
+  .gem-writeup :global(a) {
+    color: var(--color-gem-gold);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+  .gem-writeup :global(a:hover) {
+    color: var(--color-gem-gold-light);
+    text-decoration-thickness: 2px;
+  }
+
+  /* ── LISTS ── */
+  .gem-writeup :global(ul),
+  .gem-writeup :global(ol) {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+  .gem-writeup :global(ul) { list-style: disc; }
+  .gem-writeup :global(ul ul) { list-style: circle; }
+  .gem-writeup :global(ul ul ul) { list-style: square; }
+  .gem-writeup :global(ol) { list-style: decimal; }
+  .gem-writeup :global(ol ol) { list-style: lower-alpha; }
+  .gem-writeup :global(ol ol ol) { list-style: lower-roman; }
+  .gem-writeup :global(li) { padding-left: 0.25rem; }
+  .gem-writeup :global(li::marker) { color: var(--color-gem-gold); }
+  .gem-writeup :global(li + li) { margin-top: 0.4rem; }
+  .gem-writeup :global(li > ul),
+  .gem-writeup :global(li > ol) { margin-top: 0.4rem; }
+  /* Task lists (GFM checkboxes) */
+  .gem-writeup :global(li input[type="checkbox"]) {
+    margin-right: 0.5em;
+    accent-color: var(--color-gem-gold);
+  }
+  .gem-writeup :global(ul.contains-task-list) { list-style: none; padding-left: 0.25rem; }
+
+  /* ── DEFINITION LISTS ── */
+  .gem-writeup :global(dl) { margin: 0; }
+  .gem-writeup :global(dt) { font-weight: 700; color: var(--color-gem-text); margin-top: 0.75rem; }
+  .gem-writeup :global(dd) { margin: 0.2rem 0 0 0; padding-left: 1.25rem; color: var(--color-gem-text-muted); }
+
+  /* ── BLOCKQUOTE — pull-quote treatment ── */
+  .gem-writeup :global(blockquote) {
+    margin: 2rem 0;
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    border-left: 3px solid var(--color-gem-gold);
+    color: var(--color-gem-text);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-style: italic;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+  .gem-writeup :global(blockquote p) { margin: 0; }
+  .gem-writeup :global(blockquote p + p) { margin-top: 0.75rem; }
+  .gem-writeup :global(blockquote cite),
+  .gem-writeup :global(blockquote footer) {
+    display: block;
+    margin-top: 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-style: normal;
+    color: var(--color-gem-text-muted);
+  }
+  .gem-writeup :global(blockquote cite::before),
+  .gem-writeup :global(blockquote footer::before) { content: "— "; }
+
+  /* ── CODE ── */
+  .gem-writeup :global(code) {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--color-gem-mist-2);
+    color: var(--color-gem-text);
     padding: 0.15em 0.4em;
     border-radius: 4px;
+    border: 1px solid var(--color-gem-border);
   }
-  .gem-writeup pre {
+  .gem-writeup :global(pre) {
     background: var(--color-gem-dark);
-    color: white;
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.92);
+    padding: 1.125rem 1.25rem;
+    border-radius: 10px;
     overflow-x: auto;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
-  .gem-writeup pre code { background: transparent; padding: 0; color: inherit; }
-  .gem-writeup img { max-width: 100%; border-radius: 8px; }
-  .gem-writeup hr { border: 0; border-top: 1px solid var(--color-gem-border); margin: 1.5rem 0; }
+  .gem-writeup :global(pre code) {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  /* Inline keyboard shortcut */
+  .gem-writeup :global(kbd) {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8em;
+    background: white;
+    border: 1px solid var(--color-gem-border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0.1em 0.45em;
+    color: var(--color-gem-text);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  /* ── TABLES ── */
+  .gem-writeup :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+    margin: 1.75rem 0;
+  }
+  .gem-writeup :global(thead) {
+    border-bottom: 2px solid var(--color-gem-border);
+  }
+  .gem-writeup :global(th) {
+    text-align: left;
+    font-weight: 700;
+    color: var(--color-gem-text);
+    padding: 0.625rem 0.875rem;
+    background: var(--color-gem-mist);
+  }
+  .gem-writeup :global(td) {
+    padding: 0.625rem 0.875rem;
+    border-top: 1px solid var(--color-gem-border);
+    color: var(--color-gem-text);
+    vertical-align: top;
+  }
+  .gem-writeup :global(tbody tr:hover) { background: var(--color-gem-mist); }
+
+  /* ── MEDIA ── */
+  .gem-writeup :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 1.5rem 0;
+  }
+  .gem-writeup :global(figure) { margin: 1.5rem 0; }
+  .gem-writeup :global(figure img) { margin: 0 0 0.5rem 0; }
+  .gem-writeup :global(figcaption) {
+    font-size: 0.8125rem;
+    color: var(--color-gem-text-muted);
+    text-align: center;
+    font-style: italic;
+  }
+
+  /* ── HORIZONTAL RULE ── */
+  .gem-writeup :global(hr) {
+    border: 0;
+    height: 0;
+    border-top: 1px solid var(--color-gem-border);
+    margin: 2.5rem auto;
+    width: 100%;
+    /* Centered ornamental break: a small gold diamond on the line. */
+    position: relative;
+    overflow: visible;
+  }
+  .gem-writeup :global(hr::after) {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 7px;
+    height: 7px;
+    background: var(--color-gem-gold);
+  }
+
+  /* ── DETAILS / SUMMARY (collapsible blocks) ── */
+  .gem-writeup :global(details) {
+    border: 1px solid var(--color-gem-border);
+    border-radius: 8px;
+    padding: 0.875rem 1.125rem;
+    background: var(--color-gem-mist);
+  }
+  .gem-writeup :global(summary) {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-gem-text);
+  }
+  .gem-writeup :global(details[open] summary) { margin-bottom: 0.625rem; }
 
   .gem-gallery {
     display: grid;

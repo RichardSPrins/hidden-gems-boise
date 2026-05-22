@@ -194,7 +194,12 @@ const schemas = [
   .post-hero-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: rgba(255,255,255,0.55); flex-wrap: wrap; }
 
   .post-layout { display: grid; grid-template-columns: 1fr 280px; gap: 3rem; padding-top: 3rem; padding-bottom: 4rem; align-items: start; }
-  @media (max-width: 1024px) { .post-layout { grid-template-columns: 1fr; } .post-sidebar { order: -1; } }
+  /* Mobile: article reads first, sidebar drops below it. Sidebar also loses
+     `position: sticky` so it doesn't float over the article on scroll. */
+  @media (max-width: 1024px) {
+    .post-layout { grid-template-columns: 1fr; }
+    .post-sidebar { order: 0; position: static; top: auto; }
+  }
 
   .post-article { display: flex; flex-direction: column; gap: 2rem; }
 

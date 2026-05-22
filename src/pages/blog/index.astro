@@ -9,9 +9,6 @@ const sorted = allPosts.sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
 );
 
-const featured = sorted.find((p) => p.data.featured);
-const rest = sorted.filter((p) => !p.data.featured || p.id !== featured?.id);
-
 const categories = [
   "Local Business",
   "Events",
@@ -21,9 +18,15 @@ const categories = [
 ];
 
 const selectedCategory = Astro.url.searchParams.get("category") ?? "";
+
+// "Featured" treatment is only for the unfiltered landing view. When the user
+// drills into a category, show every matching post in a flat grid — including
+// whichever one happens to be flagged `featured: true`.
+const featured = !selectedCategory ? sorted.find((p) => p.data.featured) : null;
+
 const filtered = selectedCategory
-  ? rest.filter((p) => p.data.category === selectedCategory)
-  : rest;
+  ? sorted.filter((p) => p.data.category === selectedCategory)
+  : sorted.filter((p) => p.id !== featured?.id);
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {

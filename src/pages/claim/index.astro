@@ -215,8 +215,9 @@ const prefillName = url.searchParams.get("name") ?? "";
           Can't find your listing or having trouble? Reach out and we'll sort it
           out.
         </p>
-        <a href="mailto:hello@hiddengemsboise.com" class="submit-claim-link"
-          >hello@hiddengemsboise.com</a
+        <a
+          href="mailto:hello@marketing.hiddengemsboise.com"
+          class="submit-claim-link">hello@marketing.hiddengemsboise.com</a
         >
       </div>
     </aside>
@@ -865,11 +866,11 @@ const prefillName = url.searchParams.get("name") ?? "";
   let selectedVerification: string | null = null;
 
   const searchInput = document.getElementById(
-    "search-input"
+    "search-input",
   ) as HTMLInputElement;
   const searchBtn = document.getElementById("search-btn") as HTMLButtonElement;
   const searchResults = document.getElementById(
-    "search-results"
+    "search-results",
   ) as HTMLDivElement;
   const searchEmpty = document.getElementById("search-empty") as HTMLDivElement;
 
@@ -879,21 +880,21 @@ const prefillName = url.searchParams.get("name") ?? "";
   const stepInfo = document.getElementById("step-info") as HTMLDivElement;
 
   const selectedBizCard = document.getElementById(
-    "selected-biz-card"
+    "selected-biz-card",
   ) as HTMLDivElement;
   const verifyMethodsWrap = document.getElementById(
-    "verify-methods"
+    "verify-methods",
   ) as HTMLDivElement;
   const changeListingBtn = document.getElementById(
-    "change-listing-btn"
+    "change-listing-btn",
   ) as HTMLButtonElement;
 
   const claimSubmitBtn = document.getElementById(
-    "claim-submit-btn"
+    "claim-submit-btn",
   ) as HTMLButtonElement;
   const claimError = document.getElementById("claim-error") as HTMLDivElement;
   const claimErrorText = document.getElementById(
-    "claim-error-text"
+    "claim-error-text",
   ) as HTMLParagraphElement;
 
   function unlockStep(el: HTMLElement, scroll = true) {
@@ -926,7 +927,7 @@ const prefillName = url.searchParams.get("name") ?? "";
 
     try {
       const res = await fetch(
-        `/api/web/claim-search?q=${encodeURIComponent(q)}`
+        `/api/web/claim-search?q=${encodeURIComponent(q)}`,
       );
       const data = await res.json();
 
@@ -958,11 +959,11 @@ const prefillName = url.searchParams.get("name") ?? "";
           "display:grid;grid-template-columns:56px 1fr auto;gap:1rem;align-items:center;padding:1rem 1.25rem;border:1.5px solid var(--color-gem-border);border-radius:10px;cursor:pointer;background:white;transition:all 0.15s;margin-bottom:0.75rem;";
         item.addEventListener(
           "mouseenter",
-          () => (item.style.borderColor = "var(--color-gem-gold)")
+          () => (item.style.borderColor = "var(--color-gem-gold)"),
         );
         item.addEventListener(
           "mouseleave",
-          () => (item.style.borderColor = "var(--color-gem-border)")
+          () => (item.style.borderColor = "var(--color-gem-border)"),
         );
         item.addEventListener("click", () => selectListing(biz));
         searchResults.appendChild(item);
@@ -1068,12 +1069,7 @@ const prefillName = url.searchParams.get("name") ?? "";
       document.getElementById("claimNotes") as HTMLTextAreaElement
     ).value.trim();
 
-    if (
-      !ownerName ||
-      !ownerEmail ||
-      !selectedBiz ||
-      !selectedVerification
-    ) {
+    if (!ownerName || !ownerEmail || !selectedBiz || !selectedVerification) {
       claimError.classList.remove("hidden");
       claimErrorText.textContent = "Please complete all required fields.";
       return;

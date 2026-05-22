@@ -68,7 +68,7 @@ export function createOrganizationSchema(): WithContext<Organization> {
     ],
     contactPoint: {
       "@type": "ContactPoint",
-      email: "hello@hiddengemsboise.com",
+      email: "hello@marketing.hiddengemsboise.com",
       contactType: "customer service",
     },
   };
