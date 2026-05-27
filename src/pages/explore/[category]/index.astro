@@ -1,5 +1,5 @@
 ---
-// src/pages/explore/[category].astro
+// src/pages/explore/[category]/index.astro
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { GET } from "@/pages/api/web/explore/category";
 
@@ -70,7 +70,6 @@ const priceOptions = [
 const { category: categoryParam } = Astro.params;
 const url = new URL(Astro.request.url);
 const q = url.searchParams.get("q") ?? "";
-const subcategorySlug = url.searchParams.get("subcategory") ?? "";
 const neighborhood = url.searchParams.get("neighborhood") ?? "";
 const pricePoints = url.searchParams.getAll("price");
 const sort = url.searchParams.get("sort") ?? "rating";
@@ -79,6 +78,7 @@ const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
 // ─── API Call ─────────────────────────────────────────────
 const apiUrl = new URL(Astro.request.url);
 apiUrl.searchParams.set("categorySlug", categoryParam ?? "");
+apiUrl.searchParams.delete("subcategory");
 
 const response = await GET({
   request: new Request(apiUrl.toString()),
@@ -116,7 +116,6 @@ function renderStars(rating: number) {
 function buildUrl(overrides: Record<string, string | string[] | null>) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
-  if (subcategorySlug) params.set("subcategory", subcategorySlug);
   if (neighborhood) params.set("neighborhood", neighborhood);
   pricePoints.forEach((p: string) => params.append("price", p));
   params.set("sort", sort);
@@ -131,8 +130,7 @@ function buildUrl(overrides: Record<string, string | string[] | null>) {
   return qs ? `${base}?${qs}` : base;
 }
 
-const hasFilters =
-  q || subcategorySlug || neighborhood || pricePoints.length > 0;
+const hasFilters = q || neighborhood || pricePoints.length > 0;
 ---
 
 <PublicLayout
@@ -194,11 +192,8 @@ const hasFilters =
                 <ul class="sidebar-cat-list">
                   <li>
                     <a
-                      href={buildUrl({ subcategory: null })}
-                      class:list={[
-                        "sidebar-cat-item",
-                        !subcategorySlug && "sidebar-cat-active",
-                      ]}
+                      href={`/explore/${activeCategory.slug}`}
+                      class:list={["sidebar-cat-item", "sidebar-cat-active"]}
                     >
                       All {activeCategory.name}
                     </a>
@@ -206,11 +201,8 @@ const hasFilters =
                   {activeCategory.subcategories.map((sub: any) => (
                     <li>
                       <a
-                        href={buildUrl({ subcategory: sub.slug })}
-                        class:list={[
-                          "sidebar-cat-item",
-                          subcategorySlug === sub.slug && "sidebar-cat-active",
-                        ]}
+                        href={`/explore/${activeCategory.slug}/${sub.slug}`}
+                        class="sidebar-cat-item"
                       >
                         {sub.name}
                       </a>
@@ -253,7 +245,6 @@ const hasFilters =
         >
           <p class="sidebar-label">Price Range</p>
           <input type="hidden" name="q" value={q} />
-          <input type="hidden" name="subcategory" value={subcategorySlug} />
           <input type="hidden" name="sort" value={sort} />
           <div class="price-pills">
             {
@@ -341,21 +332,6 @@ const hasFilters =
           {Number(count).toLocaleString()}
           {Number(count) === 1 ? "result" : "results"}
           {
-            subcategorySlug && (
-              <span>
-                {" "}
-                in{" "}
-                <strong>
-                  {
-                    activeCategory.subcategories.find(
-                      (s: any) => s.slug === subcategorySlug
-                    )?.name
-                  }
-                </strong>
-              </span>
-            )
-          }
-          {
             q && (
               <span>
                 {" "}
@@ -376,7 +352,6 @@ const hasFilters =
           </button>
           <form method="get" action={`/explore/${activeCategory.slug}`} class="sort-form">
             <input type="hidden" name="q" value={q} />
-            <input type="hidden" name="subcategory" value={subcategorySlug} />
             <input type="hidden" name="neighborhood" value={neighborhood} />
             {
               pricePoints.map((p: string) => (
@@ -403,16 +378,6 @@ const hasFilters =
             {q && (
               <a href={buildUrl({ q: null })} class="filter-chip">
                 "{q}" ✕
-              </a>
-            )}
-            {subcategorySlug && (
-              <a href={buildUrl({ subcategory: null })} class="filter-chip">
-                {
-                  activeCategory.subcategories.find(
-                    (s: any) => s.slug === subcategorySlug
-                  )?.name
-                }{" "}
-                ✕
               </a>
             )}
             {neighborhood && (
@@ -594,11 +559,8 @@ const hasFilters =
               <ul class="sidebar-cat-list">
                 <li>
                   <a
-                    href={buildUrl({ subcategory: null })}
-                    class:list={[
-                      "sidebar-cat-item",
-                      !subcategorySlug && "sidebar-cat-active",
-                    ]}
+                    href={`/explore/${activeCategory.slug}`}
+                    class:list={["sidebar-cat-item", "sidebar-cat-active"]}
                   >
                     All {activeCategory.name}
                   </a>
@@ -606,11 +568,8 @@ const hasFilters =
                 {activeCategory.subcategories.map((sub: any) => (
                   <li>
                     <a
-                      href={buildUrl({ subcategory: sub.slug })}
-                      class:list={[
-                        "sidebar-cat-item",
-                        subcategorySlug === sub.slug && "sidebar-cat-active",
-                      ]}
+                      href={`/explore/${activeCategory.slug}/${sub.slug}`}
+                      class="sidebar-cat-item"
                     >
                       {sub.name}
                     </a>
@@ -629,7 +588,6 @@ const hasFilters =
       >
         <p class="sidebar-label">Price Range</p>
         <input type="hidden" name="q" value={q} />
-        <input type="hidden" name="subcategory" value={subcategorySlug} />
         <input type="hidden" name="sort" value={sort} />
         <div class="price-pills">
           {

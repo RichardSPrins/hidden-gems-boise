@@ -145,8 +145,8 @@ const hasFilters = q || categorySlug || subcategorySlug || neighborhood || price
                   <ul class="sidebar-subcat-list">
                     <li>
                       <a
-                        href={buildUrl({ subcategory: null, page: "1" })}
-                        class:list={["sidebar-subcat-item", !subcategorySlug && "sidebar-subcat-active"]}
+                        href={`/explore/${cat.slug}`}
+                        class="sidebar-subcat-item"
                       >
                         All {cat.name}
                       </a>
@@ -154,8 +154,8 @@ const hasFilters = q || categorySlug || subcategorySlug || neighborhood || price
                     {cat.subcategories.map(sub => (
                       <li>
                         <a
-                          href={buildUrl({ subcategory: sub.slug, page: "1" })}
-                          class:list={["sidebar-subcat-item", subcategorySlug === sub.slug && "sidebar-subcat-active"]}
+                          href={`/explore/${cat.slug}/${sub.slug}`}
+                          class="sidebar-subcat-item"
                         >
                           {sub.name}
                         </a>
