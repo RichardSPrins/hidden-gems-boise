@@ -146,7 +146,7 @@ const schemas = [
       <div class="listing-hero-body">
         <div>
           <div class="listing-hero-badges">
-            {biz.isGemOfWeek && <span class="gem-badge">💎 Gem of the Week</span>}
+            {/* {biz.isGemOfWeek && <span class="gem-badge">💎 Gem of the Week</span>} */}
             {biz.isVerified && <span class="verified-badge">✓ Verified</span>}
             {isUnclaimed && <span class="unclaimed-badge">Unclaimed</span>}
           </div>
@@ -527,6 +527,8 @@ const schemas = [
         </div>
       )}
 
+      {/* Gem Spotlight sidebar — hidden while GoTW feature is being fleshed out */}
+      {/*
       {biz.spotlights?.length > 0 && (
         <div class="sidebar-card spotlight-card">
           <div class="spotlight-eyebrow">💎 Gem Spotlight</div>
@@ -535,6 +537,7 @@ const schemas = [
           <a href="/gems" class="contact-link">Read the full feature →</a>
         </div>
       )}
+      */}
     </aside>
   </div>
 

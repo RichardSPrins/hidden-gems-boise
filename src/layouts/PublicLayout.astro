@@ -13,7 +13,7 @@ const { transparentNav = false, ...baseProps } = Astro.props;
 
 const navLinks = [
   { label: "Events", href: "/events" },
-  { label: "Gem of the Week", href: "/gems" },
+  // { label: "Gem of the Week", href: "/gems" }, // hidden while feature is in flux
   { label: "Blog", href: "/blog" },
 ];
 
@@ -309,7 +309,7 @@ const accountLabel = userRole === "ADMIN" ? "Admin" : "Portal";
               [
                 { label: "All Listings", href: "/explore" },
                 { label: "Events", href: "/events" },
-                { label: "Gem of the Week", href: "/gems" },
+                // { label: "Gem of the Week", href: "/gems" }, // hidden while feature is in flux
                 { label: "Blog", href: "/blog" },
               ].map((link) => (
                 <li>

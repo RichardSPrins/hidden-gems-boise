@@ -6,6 +6,10 @@ import { gemSpotlight, business, image } from "@/lib/db/schema";
 import { eq, desc, isNotNull } from "drizzle-orm";
 import { stripMarkdown } from "@/lib/markdown";
 
+// Gem of the Week is hidden while the feature is being fleshed out.
+// Redirect home until ready; rest of the file is preserved below for later.
+return Astro.redirect("/");
+
 function gemPreview(gem: any, max = 200) {
   return gem?.shortDescription ?? stripMarkdown(gem?.writeup, max);
 }

@@ -53,9 +53,13 @@ const faqs = [
     q: "How do you pick what gets listed?",
     a: "Independently owned, locally operated, and actually worth recommending — that's the bar. No national chains, no franchises. Every submission is read by a human before it goes live.",
   },
+  // {
+  //   q: "What's a Gem of the Week?",
+  //   a: "Each week we write up one Boise business in depth — the owner's story, what makes the place special, and why you should stop in. It's the editorial heart of the site.",
+  // }, // hidden while GoTW program is being fleshed out
   {
-    q: "What's a Gem of the Week?",
-    a: "Each week we write up one Boise business in depth — the owner's story, what makes the place special, and why you should stop in. It's the editorial heart of the site.",
+    q: "What's a Verified Gem?",
+    a: "Verified Gems are our editorial spotlights — businesses we've spoken with directly and confirmed are independently owned, locally operated, and accurately represented on the site. They may not have claimed their listing yet, but the ✓ Verified badge means we've personally vouched for them as a true local gem worth knowing about.",
   },
   {
     q: "I own a business. How do I get listed?",
@@ -168,11 +172,11 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
           > If a place is featured, it's because we think it's worth your time.
         </p>
         <p>
-          New listings get a read from a real person before they go up. Every
-          week, we write up one business in depth as the
-          <a href="/gems" class="whatis-link">Gem of the Week</a> — owner story, why
-          it's worth visiting, what makes it different from whatever you'd find on
-          Yelp.
+          New listings get a read from a real person before they go up. The
+          ones we've personally talked to — confirmed independently owned,
+          locally operated, and accurately represented — get the
+          <strong>Verified Gem</strong> badge. It's our way of saying we've vouched
+          for them ourselves.
         </p>
       </div>
     </div>
@@ -227,7 +231,8 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
     </div>
   </section>
 
-  <!-- GEM OF THE WEEK -->
+  {/* GEM OF THE WEEK — hidden while feature is being fleshed out */}
+  {/*
   {
     featuredGem && (
       <section class="gemow-section">
@@ -340,6 +345,7 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
       </section>
     )
   }
+  */}
 
   <!-- LOCAL FAVORITES -->
   <section class="favorites-section">

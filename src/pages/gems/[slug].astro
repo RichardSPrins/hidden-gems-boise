@@ -6,6 +6,10 @@ import { gemSpotlight, image, location } from "@/lib/db/schema";
 import { eq, desc, isNotNull, ne } from "drizzle-orm";
 import { renderMarkdown, stripMarkdown } from "@/lib/markdown";
 
+// Gem of the Week is hidden while the feature is being fleshed out.
+// Redirect home until ready; rest of the file is preserved below for later.
+return Astro.redirect("/");
+
 const { slug: id } = Astro.params;
 
 const spotlight = await db.query.gemSpotlight.findFirst({
