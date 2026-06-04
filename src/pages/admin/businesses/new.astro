@@ -71,7 +71,10 @@ const socialPlatforms = [
 
       <div>
         <label class="block text-sm font-medium mb-1.5">Bio</label>
-        <textarea name="bio" rows="4" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="2–4 sentences. The business's own description on their detail page."></textarea>
+        <textarea id="bio-editor" name="bio" rows="10" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" placeholder="The business's description on their detail page. Markdown supported — headings, lists, links, bold/italic, images."></textarea>
+        <p class="text-xs text-gem-text-muted mt-1">
+          Markdown. Drag images into the editor or use the image button — they upload to R2 automatically.
+        </p>
       </div>
 
       <div>
@@ -221,7 +224,47 @@ const socialPlatforms = [
     </div>
   </form>
 
+  <link rel="stylesheet" href="https://unpkg.com/easymde@2.18.0/dist/easymde.min.css" />
+  <script is:inline src="https://unpkg.com/easymde@2.18.0/dist/easymde.min.js"></script>
+
   <script is:inline define:vars={{ categories }}>
+    // Bio rich-text editor — EasyMDE backed by /api/admin/upload for inline
+    // images. Drag-and-drop and paste-from-clipboard both go through the
+    // upload function, which inserts ![](r2-url) at the cursor on success.
+    const bioMde = new EasyMDE({
+      element: document.getElementById("bio-editor"),
+      autoDownloadFontAwesome: true,
+      spellChecker: false,
+      status: ["lines", "words"],
+      minHeight: "220px",
+      toolbar: [
+        "bold", "italic", "heading", "|",
+        "quote", "unordered-list", "ordered-list", "|",
+        "link", "image", "upload-image", "|",
+        "preview", "side-by-side", "fullscreen", "|",
+        "guide",
+      ],
+      uploadImage: true,
+      imageMaxSize: 5 * 1024 * 1024,
+      imageAccept: "image/jpeg,image/png,image/webp",
+      imageUploadFunction: async (file, onSuccess, onError) => {
+        try {
+          const body = new FormData();
+          body.append("file", file);
+          const res = await fetch("/api/admin/upload", { method: "POST", body });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            onError(data.error || "Upload failed.");
+            return;
+          }
+          const data = await res.json();
+          onSuccess(data.url);
+        } catch {
+          onError("Network error during upload.");
+        }
+      },
+    });
+
     // Subcategory cascade
     const catSel = document.getElementById("categoryId");
     const subSel = document.getElementById("subcategoryId");
@@ -331,7 +374,7 @@ const socialPlatforms = [
         slug: fd.get("slug") || undefined,
         categoryId: fd.get("categoryId"),
         subcategoryId: fd.get("subcategoryId") || undefined,
-        bio: fd.get("bio") || undefined,
+        bio: bioMde.value() || undefined,
         editorialBlurb: fd.get("editorialBlurb") || undefined,
         websiteUrl: fd.get("websiteUrl") || undefined,
         bookingUrl: fd.get("bookingUrl") || undefined,

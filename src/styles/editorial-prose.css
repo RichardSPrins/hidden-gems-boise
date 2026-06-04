@@ -1,0 +1,302 @@
+/* ─────────────────────────────────────────────────────────────
+   EDITORIAL MARKDOWN — .gem-writeup
+   ─────────────────────────────────────────────────────────────
+   Magazine-style prose treatment for HTML rendered from markdown:
+   display headings, gold accents, drop cap on the lede paragraph,
+   pull-quote blockquotes, tasteful tables.
+
+   Used by the Gem of the Week writeup and the listing detail bio.
+   Selectors are unscoped because the HTML is injected via Astro's
+   `set:html` and must be reachable regardless of page bundle.
+   ───────────────────────────────────────────────────────────── */
+.gem-writeup {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-gem-text);
+}
+
+.gem-writeup > * + * { margin-top: 1.25rem; }
+.gem-writeup > *:first-child { margin-top: 0; }
+
+/* ── HEADINGS ── */
+.gem-writeup h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--color-gem-text);
+  margin-top: 2.75rem;
+  margin-bottom: 0.25rem;
+}
+.gem-writeup h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.4vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  color: var(--color-gem-text);
+  margin-top: 2.5rem;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-gem-border);
+}
+.gem-writeup h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-gem-text);
+  margin-top: 2rem;
+  margin-bottom: 0.25rem;
+}
+.gem-writeup h4 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-gem-text);
+  margin-top: 1.5rem;
+  margin-bottom: 0.25rem;
+  text-transform: none;
+}
+.gem-writeup h5 {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-gem-text-subtle);
+  margin-top: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+.gem-writeup h6 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-gem-gold);
+  margin-top: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+.gem-writeup h1 + p,
+.gem-writeup h2 + p,
+.gem-writeup h3 + p,
+.gem-writeup h4 + p,
+.gem-writeup h5 + p,
+.gem-writeup h6 + p { margin-top: 0.625rem; }
+
+/* ── PARAGRAPHS + LEDE DROP CAP ── */
+.gem-writeup p {
+  margin: 0;
+  color: var(--color-gem-text);
+}
+.gem-writeup > p:first-child::first-letter {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-gem-gold);
+  float: left;
+  font-size: 3.2em;
+  line-height: 0.9;
+  padding-right: 0.5rem;
+  padding-top: 0.4rem;
+  margin-bottom: -0.2rem;
+}
+
+/* ── INLINE TEXT ── */
+.gem-writeup strong { font-weight: 700; color: var(--color-gem-text); }
+.gem-writeup em { font-style: italic; }
+.gem-writeup del,
+.gem-writeup s { color: var(--color-gem-text-subtle); text-decoration: line-through; }
+.gem-writeup ins,
+.gem-writeup u { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.gem-writeup mark {
+  background: linear-gradient(transparent 60%, rgba(201, 168, 76, 0.35) 60%);
+  color: inherit;
+  padding: 0 0.1em;
+}
+.gem-writeup small { font-size: 0.875em; color: var(--color-gem-text-muted); }
+.gem-writeup sub,
+.gem-writeup sup { font-size: 0.75em; line-height: 0; }
+.gem-writeup abbr[title] { text-decoration: underline dotted; cursor: help; }
+
+/* ── LINKS ── */
+.gem-writeup a {
+  color: var(--color-gem-gold);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.gem-writeup a:hover {
+  color: var(--color-gem-gold-light);
+  text-decoration-thickness: 2px;
+}
+
+/* ── LISTS ── */
+.gem-writeup ul,
+.gem-writeup ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+.gem-writeup ul { list-style: disc; }
+.gem-writeup ul ul { list-style: circle; }
+.gem-writeup ul ul ul { list-style: square; }
+.gem-writeup ol { list-style: decimal; }
+.gem-writeup ol ol { list-style: lower-alpha; }
+.gem-writeup ol ol ol { list-style: lower-roman; }
+.gem-writeup li { padding-left: 0.25rem; }
+.gem-writeup li::marker { color: var(--color-gem-gold); }
+.gem-writeup li + li { margin-top: 0.4rem; }
+.gem-writeup li > ul,
+.gem-writeup li > ol { margin-top: 0.4rem; }
+.gem-writeup li input[type="checkbox"] {
+  margin-right: 0.5em;
+  accent-color: var(--color-gem-gold);
+}
+.gem-writeup ul.contains-task-list { list-style: none; padding-left: 0.25rem; }
+
+/* ── DEFINITION LISTS ── */
+.gem-writeup dl { margin: 0; }
+.gem-writeup dt { font-weight: 700; color: var(--color-gem-text); margin-top: 0.75rem; }
+.gem-writeup dd { margin: 0.2rem 0 0 0; padding-left: 1.25rem; color: var(--color-gem-text-muted); }
+
+/* ── BLOCKQUOTE — pull-quote treatment ── */
+.gem-writeup blockquote {
+  margin: 2rem 0;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  border-left: 3px solid var(--color-gem-gold);
+  color: var(--color-gem-text);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-style: italic;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+.gem-writeup blockquote p { margin: 0; }
+.gem-writeup blockquote p + p { margin-top: 0.75rem; }
+.gem-writeup blockquote cite,
+.gem-writeup blockquote footer {
+  display: block;
+  margin-top: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-style: normal;
+  color: var(--color-gem-text-muted);
+}
+.gem-writeup blockquote cite::before,
+.gem-writeup blockquote footer::before { content: "— "; }
+
+/* ── CODE ── */
+.gem-writeup code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--color-gem-mist-2);
+  color: var(--color-gem-text);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid var(--color-gem-border);
+}
+.gem-writeup pre {
+  background: var(--color-gem-dark);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 1.125rem 1.25rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.gem-writeup pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.gem-writeup kbd {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.8em;
+  background: white;
+  border: 1px solid var(--color-gem-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.1em 0.45em;
+  color: var(--color-gem-text);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* ── TABLES ── */
+.gem-writeup table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  margin: 1.75rem 0;
+}
+.gem-writeup thead {
+  border-bottom: 2px solid var(--color-gem-border);
+}
+.gem-writeup th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-gem-text);
+  padding: 0.625rem 0.875rem;
+  background: var(--color-gem-mist);
+}
+.gem-writeup td {
+  padding: 0.625rem 0.875rem;
+  border-top: 1px solid var(--color-gem-border);
+  color: var(--color-gem-text);
+  vertical-align: top;
+}
+.gem-writeup tbody tr:hover { background: var(--color-gem-mist); }
+
+/* ── MEDIA ── */
+.gem-writeup img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 1.5rem 0;
+}
+.gem-writeup figure { margin: 1.5rem 0; }
+.gem-writeup figure img { margin: 0 0 0.5rem 0; }
+.gem-writeup figcaption {
+  font-size: 0.8125rem;
+  color: var(--color-gem-text-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── HORIZONTAL RULE ── */
+.gem-writeup hr {
+  border: 0;
+  height: 0;
+  border-top: 1px solid var(--color-gem-border);
+  margin: 2.5rem auto;
+  width: 100%;
+  position: relative;
+  overflow: visible;
+}
+.gem-writeup hr::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 7px;
+  height: 7px;
+  background: var(--color-gem-gold);
+}
+
+/* ── DETAILS / SUMMARY (collapsible blocks) ── */
+.gem-writeup details {
+  border: 1px solid var(--color-gem-border);
+  border-radius: 8px;
+  padding: 0.875rem 1.125rem;
+  background: var(--color-gem-mist);
+}
+.gem-writeup summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-gem-text);
+}
+.gem-writeup details[open] summary { margin-bottom: 0.625rem; }
