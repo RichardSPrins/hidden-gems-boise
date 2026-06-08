@@ -1,13 +1,8 @@
 import type { APIRoute } from "astro";
 import { db } from "@/lib/db";
-import {
-  business,
-  category,
-  subcategory,
-  location,
-  image,
-} from "@/lib/db/schema";
+import { business, location, image } from "@/lib/db/schema";
 import { eq, and, ilike, or, inArray, desc, asc, sql } from "drizzle-orm";
+import { getCategoriesWithSubs } from "@/lib/categories";
 
 export const GET: APIRoute = async ({ request, params }) => {
   const url = new URL(request.url);
@@ -20,11 +15,8 @@ export const GET: APIRoute = async ({ request, params }) => {
   const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
   const PER_PAGE = 12;
 
-  // All categories for sidebar + carousel
-  const allCategories = await db.query.category.findMany({
-    orderBy: asc(category.name),
-    with: { subcategories: { orderBy: asc(subcategory.name) } },
-  });
+  // Cached canonical category list (sortOrder respected, includes new fields).
+  const allCategories = await getCategoriesWithSubs();
 
   const activeCategory =
     allCategories.find((c) => c.slug === categorySlug) ?? null;

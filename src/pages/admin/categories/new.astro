@@ -1,0 +1,183 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="New Category" activeSection="categories">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/categories" class="hover:text-gem-gold">Categories</a>
+      <span class="mx-2">/</span>
+      <span>New</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Add a new category</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Subcategories can be added from the edit page after the category is created.
+    </p>
+  </div>
+
+  <form id="cat-form" class="space-y-6 max-w-2xl">
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Name <span class="text-red-500">*</span></label>
+        <input name="name" type="text" required class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Slug</label>
+        <input name="slug" type="text" placeholder="auto-generated from name" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold font-mono" />
+        <p class="text-xs text-gem-text-subtle mt-1">
+          Leave blank to auto-generate. <strong>Locked after creation</strong> — choose carefully.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Sort order</label>
+        <input name="sortOrder" type="number" value="0" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold tabular-nums" />
+        <p class="text-xs text-gem-text-subtle mt-1">Lower numbers appear first. Use ascending integers (1, 2, 3…).</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Tagline</label>
+        <input name="tagline" type="text" maxlength="160" placeholder="One editorial line shown on the home grid card." class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Description</label>
+        <textarea name="description" rows="3" placeholder="Paragraph used on the /explore/<slug> hero and the meta description." class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"></textarea>
+      </div>
+    </section>
+
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Hero image</h2>
+      <div>
+        <input
+          type="file"
+          id="image-file"
+          accept="image/jpeg,image/png,image/webp"
+          class="block w-full text-sm text-gem-text-muted file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-gem-text file:text-white file:font-medium file:cursor-pointer file:hover:bg-gem-stone"
+        />
+        <input name="heroImageUrl" type="hidden" />
+        <p id="image-status" class="text-xs text-gem-text-subtle mt-1">JPEG, PNG, or WebP. Max 5 MB. Optional — if blank, a generic Boise image is used.</p>
+        <div id="image-preview" class="hidden mt-3">
+          <img id="image-preview-img" alt="" class="rounded-lg max-h-48 border border-gem-border" />
+          <button type="button" id="image-remove" class="text-xs text-red-600 hover:underline mt-2">Remove</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50">
+        Save category
+      </button>
+      <a href="/admin/categories" class="text-sm text-gem-text-muted hover:text-gem-text">Cancel</a>
+      <p id="form-error" class="text-sm text-red-600 hidden ml-auto" role="alert"></p>
+    </div>
+  </form>
+
+  <script is:inline>
+    // Image upload — uploads to R2 immediately on file selection, stashes the
+    // returned URL in the hidden heroImageUrl input. Mirrors the businesses
+    // form pattern.
+    const fileInput = document.getElementById("image-file");
+    const urlInput = document.querySelector('input[name="heroImageUrl"]');
+    const status = document.getElementById("image-status");
+    const preview = document.getElementById("image-preview");
+    const previewImg = document.getElementById("image-preview-img");
+    const removeBtn = document.getElementById("image-remove");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        status.textContent = "That file is bigger than 5 MB. Pick a smaller image.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+        return;
+      }
+      status.textContent = "Uploading…";
+      status.className = "text-xs text-gem-text-muted mt-1";
+
+      const body = new FormData();
+      body.append("file", file);
+      try {
+        const res = await fetch("/api/admin/upload", { method: "POST", body });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          status.textContent = data.error || "Upload failed.";
+          status.className = "text-xs text-red-600 mt-1";
+          fileInput.value = "";
+          return;
+        }
+        const data = await res.json();
+        urlInput.value = data.url;
+        previewImg.src = data.url;
+        preview.classList.remove("hidden");
+        status.textContent = "Uploaded ✓";
+        status.className = "text-xs text-green-700 mt-1";
+      } catch {
+        status.textContent = "Network error during upload.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+      }
+    });
+
+    removeBtn.addEventListener("click", () => {
+      urlInput.value = "";
+      fileInput.value = "";
+      preview.classList.add("hidden");
+      previewImg.src = "";
+      status.textContent = "JPEG, PNG, or WebP. Max 5 MB. Optional — if blank, a generic Boise image is used.";
+      status.className = "text-xs text-gem-text-subtle mt-1";
+    });
+
+    // Submit
+    const form = document.getElementById("cat-form");
+    const btn = document.getElementById("submit-btn");
+    const errEl = document.getElementById("form-error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+
+      const fd = new FormData(form);
+      const sortOrderRaw = fd.get("sortOrder");
+      const sortOrder = sortOrderRaw === null || sortOrderRaw === ""
+        ? 0
+        : Number(sortOrderRaw);
+
+      const payload = {
+        name: fd.get("name"),
+        slug: fd.get("slug") || undefined,
+        tagline: fd.get("tagline") || undefined,
+        description: fd.get("description") || undefined,
+        sortOrder,
+        heroImageUrl: fd.get("heroImageUrl") || undefined,
+      };
+
+      try {
+        const res = await fetch("/api/admin/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          errEl.textContent = data?.error || "Could not save category.";
+          errEl.classList.remove("hidden");
+          btn.disabled = false;
+          btn.textContent = "Save category";
+          return;
+        }
+        const data = await res.json();
+        window.location.href = `/admin/categories/${data.id}`;
+      } catch {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Save category";
+      }
+    });
+  </script>
+</AdminLayout>

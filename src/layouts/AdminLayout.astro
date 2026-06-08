@@ -10,6 +10,7 @@ export interface Props extends BaseProps {
     | "dashboard"
     | "businesses"
     | "submissions"
+    | "categories"
     | "gems"
     | "reviews";
 }
@@ -31,6 +32,12 @@ const navItems = [
     href: "/admin/submissions",
     section: "submissions",
     icon: "✎",
+  },
+  {
+    label: "Categories",
+    href: "/admin/categories",
+    section: "categories",
+    icon: "◈",
   },
   { label: "Gem Spotlights", href: "/admin/gems", section: "gems", icon: "✦" },
 ];

@@ -1,0 +1,317 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { category, subcategory } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/categories");
+
+const cat = await db.query.category.findFirst({
+  where: eq(category.id, id),
+  with: {
+    subcategories: {
+      orderBy: [asc(subcategory.sortOrder), asc(subcategory.name)],
+    },
+  },
+});
+if (!cat) return Astro.redirect("/admin/categories");
+---
+
+<AdminLayout title={cat.name} activeSection="categories">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/admin/categories" class="hover:text-gem-gold">Categories</a>
+      <span class="mx-2">/</span>
+      <span>{cat.name}</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Edit category</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Changes propagate to the public site within ~60 seconds (the category cache TTL), or instantly on next admin write.
+    </p>
+  </div>
+
+  <form id="cat-form" class="space-y-6 max-w-2xl" data-id={cat.id}>
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Name <span class="text-red-500">*</span></label>
+        <input name="name" type="text" required value={cat.name} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Slug</label>
+        <input name="slug" type="text" value={cat.slug} disabled class="w-full px-3 py-2 rounded-lg border border-gem-border bg-gem-mist text-gem-text-muted font-mono cursor-not-allowed" />
+        <p class="text-xs text-gem-text-subtle mt-1">
+          Locked after creation — to rename, create a new category and reassign businesses.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Sort order</label>
+        <input name="sortOrder" type="number" value={cat.sortOrder} class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold tabular-nums" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Tagline</label>
+        <input name="tagline" type="text" maxlength="160" value={cat.tagline ?? ""} placeholder="One editorial line shown on the home grid card." class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Description</label>
+        <textarea name="description" rows="3" placeholder="Paragraph used on the /explore/<slug> hero and the meta description." class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">{cat.description ?? ""}</textarea>
+      </div>
+    </section>
+
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Hero image</h2>
+      <div>
+        <input
+          type="file"
+          id="image-file"
+          accept="image/jpeg,image/png,image/webp"
+          class="block w-full text-sm text-gem-text-muted file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-gem-text file:text-white file:font-medium file:cursor-pointer file:hover:bg-gem-stone"
+        />
+        <input name="heroImageUrl" type="hidden" value={cat.heroImageUrl ?? ""} />
+        <p id="image-status" class="text-xs text-gem-text-subtle mt-1">JPEG, PNG, or WebP. Max 5 MB.</p>
+        <div id="image-preview" class={cat.heroImageUrl ? "mt-3" : "hidden mt-3"}>
+          <img
+            id="image-preview-img"
+            src={cat.heroImageUrl ?? ""}
+            alt=""
+            class="rounded-lg max-h-48 border border-gem-border"
+          />
+          <button type="button" id="image-remove" class="text-xs text-red-600 hover:underline mt-2">Remove</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" id="submit-btn" class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light disabled:opacity-50">Save changes</button>
+      <button type="button" id="delete-btn" class="text-sm text-red-600 hover:underline">Delete category</button>
+      <p id="form-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <!-- Subcategory mini-CRUD -->
+  <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 max-w-2xl mt-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="font-display text-lg text-gem-text">Subcategories</h2>
+        <p class="text-xs text-gem-text-subtle mt-1">
+          Slugs are editable on new rows only. Existing slugs are locked after first save.
+        </p>
+      </div>
+      <button type="button" id="add-sub-btn" class="text-sm text-gem-gold hover:underline">+ Add subcategory</button>
+    </div>
+
+    <div id="sub-rows" class="space-y-2">
+      {cat.subcategories.map((s) => (
+        <div class="sub-row grid grid-cols-12 gap-2 items-start" data-id={s.id}>
+          <input type="text" data-field="name" value={s.name} placeholder="Name" class="col-span-4 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+          <input type="text" value={s.slug} disabled title="Locked after creation" class="col-span-3 px-2 py-1.5 text-sm rounded border border-gem-border bg-gem-mist text-gem-text-muted font-mono cursor-not-allowed" />
+          <input type="number" data-field="sortOrder" value={s.sortOrder} class="col-span-1 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold tabular-nums" />
+          <input type="text" data-field="description" value={s.description ?? ""} placeholder="Description (optional)" class="col-span-3 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />
+          <button type="button" data-action="remove" class="col-span-1 text-xs text-red-600 hover:underline justify-self-end pt-2">Remove</button>
+        </div>
+      ))}
+    </div>
+
+    <div class="flex items-center gap-3 pt-2 border-t border-gem-border">
+      <button type="button" id="sub-save-btn" class="bg-gem-gold text-gem-dark font-semibold px-4 py-2 rounded-lg hover:bg-gem-gold-light disabled:opacity-50 text-sm">
+        Save subcategories
+      </button>
+      <p id="sub-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </section>
+
+  <script is:inline define:vars={{ catId: cat.id }}>
+    // ─── Hero image upload (shared with new.astro) ───────────
+    const fileInput = document.getElementById("image-file");
+    const urlInput = document.querySelector('input[name="heroImageUrl"]');
+    const status = document.getElementById("image-status");
+    const preview = document.getElementById("image-preview");
+    const previewImg = document.getElementById("image-preview-img");
+    const removeBtn = document.getElementById("image-remove");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        status.textContent = "That file is bigger than 5 MB.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+        return;
+      }
+      status.textContent = "Uploading…";
+      status.className = "text-xs text-gem-text-muted mt-1";
+      const body = new FormData();
+      body.append("file", file);
+      try {
+        const res = await fetch("/api/admin/upload", { method: "POST", body });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          status.textContent = d.error || "Upload failed.";
+          status.className = "text-xs text-red-600 mt-1";
+          fileInput.value = "";
+          return;
+        }
+        const d = await res.json();
+        urlInput.value = d.url;
+        previewImg.src = d.url;
+        preview.classList.remove("hidden");
+        status.textContent = "Uploaded ✓";
+        status.className = "text-xs text-green-700 mt-1";
+      } catch {
+        status.textContent = "Network error during upload.";
+        status.className = "text-xs text-red-600 mt-1";
+        fileInput.value = "";
+      }
+    });
+
+    removeBtn.addEventListener("click", () => {
+      urlInput.value = "";
+      fileInput.value = "";
+      preview.classList.add("hidden");
+      previewImg.src = "";
+      status.textContent = "JPEG, PNG, or WebP. Max 5 MB.";
+      status.className = "text-xs text-gem-text-subtle mt-1";
+    });
+
+    // ─── Main form submit (PATCH category) ───────────────────
+    const form = document.getElementById("cat-form");
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("form-msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      msg.classList.add("hidden");
+
+      const fd = new FormData(form);
+      const sortOrderRaw = fd.get("sortOrder");
+      const payload = {
+        name: fd.get("name"),
+        tagline: (fd.get("tagline") || "").toString().trim() || null,
+        description: (fd.get("description") || "").toString().trim() || null,
+        heroImageUrl: (fd.get("heroImageUrl") || "").toString().trim() || null,
+        sortOrder: sortOrderRaw === null || sortOrderRaw === "" ? 0 : Number(sortOrderRaw),
+      };
+
+      try {
+        const res = await fetch(`/api/admin/categories/${catId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          msg.textContent = d.error || "Save failed.";
+          msg.className = "text-sm text-red-600 ml-auto";
+          msg.classList.remove("hidden");
+        } else {
+          msg.textContent = "Saved.";
+          msg.className = "text-sm text-green-600 ml-auto";
+          msg.classList.remove("hidden");
+        }
+      } catch {
+        msg.textContent = "Network error.";
+        msg.className = "text-sm text-red-600 ml-auto";
+        msg.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save changes";
+      }
+    });
+
+    // ─── Delete category ─────────────────────────────────────
+    document.getElementById("delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this category? This cannot be undone.")) return;
+      const res = await fetch(`/api/admin/categories/${catId}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.href = "/admin/categories";
+        return;
+      }
+      const d = await res.json().catch(() => ({}));
+      const m = document.getElementById("form-msg");
+      m.textContent = d.error || "Delete failed.";
+      m.className = "text-sm text-red-600 ml-auto";
+      m.classList.remove("hidden");
+    });
+
+    // ─── Subcategory mini-CRUD ───────────────────────────────
+    const rowsEl = document.getElementById("sub-rows");
+    const addBtn = document.getElementById("add-sub-btn");
+    const subSaveBtn = document.getElementById("sub-save-btn");
+    const subMsg = document.getElementById("sub-msg");
+
+    addBtn.addEventListener("click", () => {
+      const row = document.createElement("div");
+      row.className = "sub-row grid grid-cols-12 gap-2 items-start";
+      // No data-id → server treats as INSERT
+      row.innerHTML = [
+        '<input type="text" data-field="name" placeholder="Name" class="col-span-4 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />',
+        '<input type="text" data-field="slug" placeholder="slug (auto if blank)" class="col-span-3 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold font-mono" />',
+        '<input type="number" data-field="sortOrder" value="0" class="col-span-1 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold tabular-nums" />',
+        '<input type="text" data-field="description" placeholder="Description (optional)" class="col-span-3 px-2 py-1.5 text-sm rounded border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold" />',
+        '<button type="button" data-action="remove" class="col-span-1 text-xs text-red-600 hover:underline justify-self-end pt-2">Remove</button>',
+      ].join("");
+      rowsEl.appendChild(row);
+    });
+
+    // Event delegation for row removes — covers both pre-existing and added rows
+    rowsEl.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target instanceof HTMLElement && target.dataset.action === "remove") {
+        target.closest(".sub-row")?.remove();
+      }
+    });
+
+    subSaveBtn.addEventListener("click", async () => {
+      subSaveBtn.disabled = true;
+      subSaveBtn.textContent = "Saving…";
+      subMsg.classList.add("hidden");
+
+      const subcategories = Array.from(rowsEl.querySelectorAll(".sub-row")).map((row) => {
+        const id = row.dataset.id || undefined;
+        const get = (field) => row.querySelector(`[data-field="${field}"]`)?.value ?? "";
+        const sortOrderVal = get("sortOrder");
+        return {
+          id,
+          name: get("name").trim(),
+          slug: id ? undefined : get("slug").trim() || undefined,
+          description: get("description").trim() || null,
+          sortOrder: sortOrderVal === "" ? 0 : Number(sortOrderVal),
+        };
+      }).filter((r) => r.name);
+
+      try {
+        const res = await fetch(`/api/admin/categories/${catId}/subcategories`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subcategories }),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          subMsg.textContent = d.error || "Save failed.";
+          subMsg.className = "text-sm text-red-600 ml-auto";
+          subMsg.classList.remove("hidden");
+        } else {
+          subMsg.textContent = "Saved. Reloading…";
+          subMsg.className = "text-sm text-green-600 ml-auto";
+          subMsg.classList.remove("hidden");
+          // Reload so new rows get their server-assigned ids and the
+          // newly-typed slug becomes the locked one.
+          setTimeout(() => window.location.reload(), 500);
+        }
+      } catch {
+        subMsg.textContent = "Network error.";
+        subMsg.className = "text-sm text-red-600 ml-auto";
+        subMsg.classList.remove("hidden");
+      } finally {
+        subSaveBtn.disabled = false;
+        subSaveBtn.textContent = "Save subcategories";
+      }
+    });
+  </script>
+</AdminLayout>

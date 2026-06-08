@@ -1,31 +1,25 @@
 import type { APIRoute } from "astro";
 import { db } from "@/lib/db";
-import {
-  business,
-  category,
-  image,
-  gemSpotlight,
-} from "@/lib/db/schema";
+import { business, image, gemSpotlight } from "@/lib/db/schema";
 import { eq, desc, isNotNull, count, sql } from "drizzle-orm";
+import { getCategoriesWithSubs } from "@/lib/categories";
 
 export const GET: APIRoute = async () => {
-  const [categoriesRaw, trending, upcomingEvents, gemRows, totalApprovedRow] =
+  const [categoriesAll, countsRaw, trending, upcomingEvents, gemRows, totalApprovedRow] =
     await Promise.all([
-      // Categories with live count of APPROVED businesses per category.
+      // Cached canonical category list (includes icon/hero/tagline/etc).
+      getCategoriesWithSubs(),
+
+      // Live per-category APPROVED business count. Can't be cached — approvals
+      // change frequently. Zipped into the category list below.
       db
         .select({
-          id: category.id,
-          name: category.name,
-          slug: category.slug,
+          categoryId: business.categoryId,
           businessCount: count(business.id),
         })
-        .from(category)
-        .leftJoin(
-          business,
-          sql`${business.categoryId} = ${category.id} AND ${business.status} = 'APPROVED'`,
-        )
-        .groupBy(category.id, category.name, category.slug)
-        .orderBy(category.name),
+        .from(business)
+        .where(eq(business.status, "APPROVED"))
+        .groupBy(business.categoryId),
 
       // Featured / Local Favorites — prefer businesses with an editorial blurb,
       // then by rating. Falls back to top-rated if blurbs are sparse.
@@ -78,9 +72,23 @@ export const GET: APIRoute = async () => {
   const [featuredGem, ...previousGems] = gemRows;
   const totalApproved = totalApprovedRow[0]?.total ?? 0;
 
+  const countsByCatId = new Map<string, number>(
+    countsRaw.map((r) => [r.categoryId, Number(r.businessCount)])
+  );
+  const categories = categoriesAll.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    heroImageUrl: c.heroImageUrl,
+    tagline: c.tagline,
+    description: c.description,
+    sortOrder: c.sortOrder,
+    businessCount: countsByCatId.get(c.id) ?? 0,
+  }));
+
   return new Response(
     JSON.stringify({
-      categories: categoriesRaw,
+      categories,
       trending,
       upcomingEvents,
       featuredGem: featuredGem ?? null,

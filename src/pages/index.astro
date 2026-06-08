@@ -71,36 +71,8 @@ const faqs = [
   },
 ];
 
-// Category icons mapping (Tabler icon names)
-const categoryIcons: Record<string, string> = {
-  "Food & Drink": "🍽️",
-  "Health & Wellness": "💆",
-  Shopping: "🛍️",
-  "Home Services": "🔧",
-  "Arts & Entertainment": "🎭",
-  "Professional Services": "💼",
-  Education: "📚",
-  Automotive: "🚗",
-};
-
-// Editorial taglines per category — used on the home Browse-by-Category grid.
-// Update these alongside category name changes.
-const categoryTaglines: Record<string, string> = {
-  "Food & Drink":
-    "Coffee, brunch, breweries, and the dive bars locals actually go to.",
-  "Health & Wellness":
-    "Gyms, yoga, salons, and self-care that doesn't feel performative.",
-  Shopping: "Boutiques, vintage, art, gifts — when the chain just won't do.",
-  "Home Services":
-    "The HVAC, the plumber, the painter — the ones who answer the phone.",
-  "Arts & Entertainment":
-    "Galleries, venues, escape rooms — places to leave the house for.",
-  "Professional Services":
-    "Lawyers, accountants, designers — local pros worth a real conversation.",
-  Education:
-    "Tutors, music teachers, dance schools — for kids and adults alike.",
-  Automotive: "Mechanics, detailers, body shops — without the upsell.",
-};
+// Category taglines are now read from the `category` table (managed in
+// /admin/categories) and served by the home API. See cat.tagline.
 
 function pluralize(n: number, singular: string, plural: string) {
   return n === 1 ? singular : plural;
@@ -199,6 +171,7 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
               id: string;
               name: string;
               slug: string;
+              tagline: string | null;
               businessCount: number;
             }) => (
               <a href={`/explore/${cat.slug}`} class="category-card">
@@ -208,10 +181,8 @@ import boiseHero from "@/assets/images/boise-skyline.jpg";
                     {cat.businessCount}{" "}
                     {pluralize(cat.businessCount, "spot", "spots")}
                   </span>
-                  {categoryTaglines[cat.name] && (
-                    <span class="category-tagline">
-                      {categoryTaglines[cat.name]}
-                    </span>
+                  {cat.tagline && (
+                    <span class="category-tagline">{cat.tagline}</span>
                   )}
                 </div>
                 <div class="category-card-footer">

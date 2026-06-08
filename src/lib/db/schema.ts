@@ -146,7 +146,16 @@ export const category = pgTable("category", {
     .$defaultFn(() => createId()),
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
+  /** Optional URL of a hero image for the category landing page. */
+  heroImageUrl: text("hero_image_url"),
+  /** One-liner shown on the home-page category grid. */
+  tagline: text("tagline"),
+  /** Longer paragraph used on /explore/<slug> hero + SEO meta. */
+  description: text("description"),
+  /** Display order across nav, home grid, explore sidebar. Lower = earlier. */
+  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const subcategory = pgTable(
@@ -160,9 +169,16 @@ export const subcategory = pgTable(
       .references(() => category.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    /** Optional paragraph reserved for future subcategory landing pages. */
+    description: text("description"),
+    sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("subcategory_category_slug_idx").on(t.categoryId, t.slug)]
+  (t) => [
+    uniqueIndex("subcategory_category_slug_idx").on(t.categoryId, t.slug),
+    uniqueIndex("subcategory_category_name_idx").on(t.categoryId, t.name),
+  ]
 );
 
 export const feature = pgTable("feature", {

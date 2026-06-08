@@ -1,0 +1,81 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { category, subcategory } from "@/lib/db/schema";
+import { asc } from "drizzle-orm";
+import { categoryHeroImage } from "@/lib/categories";
+
+const rows = await db.query.category.findMany({
+  orderBy: [asc(category.sortOrder), asc(category.name)],
+  with: {
+    subcategories: {
+      columns: { id: true },
+      orderBy: [asc(subcategory.sortOrder), asc(subcategory.name)],
+    },
+    businesses: { columns: { id: true } },
+  },
+});
+---
+
+<AdminLayout title="Categories" activeSection="categories">
+  <div slot="page-header" class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-display text-3xl text-gem-text">Categories</h1>
+      <p class="text-gem-text-muted text-sm mt-1">
+        {rows.length} total · controls nav, home grid, explore sidebar, and category landing pages across the site.
+      </p>
+    </div>
+    <a
+      href="/admin/categories/new"
+      class="bg-gem-gold text-gem-dark font-semibold px-4 py-2 rounded-lg hover:bg-gem-gold-light no-underline"
+    >
+      + New Category
+    </a>
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl overflow-hidden">
+    {rows.length === 0 ? (
+      <div class="p-8 text-center text-sm text-gem-text-muted">
+        No categories yet. <a href="/admin/categories/new" class="text-gem-gold hover:underline">Create one →</a>
+      </div>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-gem-mist text-left text-xs uppercase tracking-widest text-gem-text-subtle">
+          <tr>
+            <th class="px-4 py-3 font-semibold w-16">Hero</th>
+            <th class="px-4 py-3 font-semibold">Name</th>
+            <th class="px-4 py-3 font-semibold">Slug</th>
+            <th class="px-4 py-3 font-semibold w-20 text-right">Sort</th>
+            <th class="px-4 py-3 font-semibold w-24 text-right">Subcats</th>
+            <th class="px-4 py-3 font-semibold w-28 text-right">Businesses</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((c) => (
+            <tr class="border-t border-gem-border hover:bg-gem-mist/50">
+              <td class="px-4 py-3">
+                <div
+                  class="w-12 h-9 rounded bg-gem-mist border border-gem-border bg-cover bg-center"
+                  style={`background-image: url('${categoryHeroImage(c)}')`}
+                  aria-hidden="true"
+                />
+              </td>
+              <td class="px-4 py-3">
+                <a
+                  href={`/admin/categories/${c.id}`}
+                  class="font-medium text-gem-text hover:text-gem-gold no-underline"
+                >
+                  {c.name}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-gem-text-muted font-mono text-xs">{c.slug}</td>
+              <td class="px-4 py-3 text-gem-text-muted text-right tabular-nums">{c.sortOrder}</td>
+              <td class="px-4 py-3 text-gem-text-muted text-right tabular-nums">{c.subcategories.length}</td>
+              <td class="px-4 py-3 text-gem-text-muted text-right tabular-nums">{c.businesses.length}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

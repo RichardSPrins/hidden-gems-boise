@@ -27,10 +27,20 @@ async function main() {
 
   // ─── CATEGORIES & SUBCATEGORIES ───────────────────────────
 
+  // Visual fields (hero, tagline, description, sortOrder) are seeded here so
+  // a fresh DB matches what the hardcoded constants used to render. After
+  // seed runs, these become editable via /admin/categories.
   const categoryData = [
     {
       name: "Food & Drink",
       slug: "food-and-drink",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Coffee, brunch, breweries, and the dive bars locals actually go to.",
+      description:
+        "From specialty coffee to craft breweries, find the best places to eat and drink across the Treasure Valley.",
+      sortOrder: 1,
       subcategories: [
         { name: "Coffee & Café", slug: "coffee-cafe" },
         { name: "Restaurant", slug: "restaurant" },
@@ -48,6 +58,13 @@ async function main() {
     {
       name: "Health & Wellness",
       slug: "health-and-wellness",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Gyms, yoga, salons, and self-care that doesn't feel performative.",
+      description:
+        "Gyms, spas, salons, and wellness studios dedicated to helping you feel your best.",
+      sortOrder: 2,
       subcategories: [
         { name: "Gym & Fitness", slug: "gym-fitness" },
         { name: "Yoga & Pilates", slug: "yoga-pilates" },
@@ -65,6 +82,13 @@ async function main() {
     {
       name: "Shopping",
       slug: "shopping",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Boutiques, vintage, art, gifts — when the chain just won't do.",
+      description:
+        "Boutiques, vintage shops, bookstores, and local retailers worth exploring.",
+      sortOrder: 3,
       subcategories: [
         { name: "Boutique Clothing", slug: "boutique-clothing" },
         { name: "Vintage & Thrift", slug: "vintage-thrift" },
@@ -82,6 +106,13 @@ async function main() {
     {
       name: "Home Services",
       slug: "home-services",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "The HVAC, the plumber, the painter — the ones who answer the phone.",
+      description:
+        "Trusted local contractors, cleaners, landscapers, and home professionals.",
+      sortOrder: 4,
       subcategories: [
         { name: "HVAC", slug: "hvac" },
         { name: "Plumbing", slug: "plumbing" },
@@ -96,6 +127,13 @@ async function main() {
     {
       name: "Arts & Entertainment",
       slug: "arts-and-entertainment",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Galleries, venues, escape rooms — places to leave the house for.",
+      description:
+        "Galleries, venues, studios, and experiences that make Boise's creative scene shine.",
+      sortOrder: 5,
       subcategories: [
         { name: "Art Gallery", slug: "art-gallery" },
         { name: "Music Venue", slug: "music-venue" },
@@ -108,6 +146,13 @@ async function main() {
     {
       name: "Professional Services",
       slug: "professional-services",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Lawyers, accountants, designers — local pros worth a real conversation.",
+      description:
+        "Local lawyers, accountants, marketers, and consultants serving the Treasure Valley.",
+      sortOrder: 6,
       subcategories: [
         { name: "Marketing & Design", slug: "marketing-design" },
         { name: "Legal", slug: "legal" },
@@ -120,6 +165,13 @@ async function main() {
     {
       name: "Education",
       slug: "education",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1600&auto=format&fit=crop&q=80",
+      tagline:
+        "Tutors, music teachers, dance schools — for kids and adults alike.",
+      description:
+        "Learning centers, tutors, dance studios, martial arts, and more.",
+      sortOrder: 7,
       subcategories: [
         {
           name: "Tutoring & Learning Center",
@@ -137,6 +189,12 @@ async function main() {
     {
       name: "Automotive",
       slug: "automotive",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1600&auto=format&fit=crop&q=80",
+      tagline: "Mechanics, detailers, body shops — without the upsell.",
+      description:
+        "Local shops for repairs, detailing, customization, and everything your vehicle needs.",
+      sortOrder: 8,
       subcategories: [
         { name: "Auto Repair & Maintenance", slug: "auto-repair-maintenance" },
         { name: "Custom & Restoration", slug: "custom-restoration" },
@@ -160,16 +218,24 @@ async function main() {
 
     let catId: string;
 
+    const catFields = {
+      name: cat.name,
+      heroImageUrl: cat.heroImageUrl,
+      tagline: cat.tagline,
+      description: cat.description,
+      sortOrder: cat.sortOrder,
+    };
+
     if (existing.length > 0) {
       catId = existing[0].id;
       await db
         .update(category)
-        .set({ name: cat.name })
+        .set({ ...catFields, updatedAt: new Date() })
         .where(eq(category.slug, cat.slug));
     } else {
       const inserted = await db
         .insert(category)
-        .values({ name: cat.name, slug: cat.slug })
+        .values({ ...catFields, slug: cat.slug })
         .returning();
       catId = inserted[0].id;
     }
@@ -177,7 +243,8 @@ async function main() {
     categoryMap[cat.slug] = catId;
     console.log(`  ✓ Category: ${cat.name}`);
 
-    for (const sub of cat.subcategories) {
+    for (let i = 0; i < cat.subcategories.length; i++) {
+      const sub = cat.subcategories[i];
       const existingSub = await db
         .select()
         .from(subcategory)
@@ -190,12 +257,17 @@ async function main() {
         subcategoryMap[sub.slug] = existingSub[0].id;
         await db
           .update(subcategory)
-          .set({ name: sub.name })
+          .set({ name: sub.name, sortOrder: i + 1, updatedAt: new Date() })
           .where(eq(subcategory.id, existingSub[0].id));
       } else {
         const insertedSub = await db
           .insert(subcategory)
-          .values({ name: sub.name, slug: sub.slug, categoryId: catId })
+          .values({
+            name: sub.name,
+            slug: sub.slug,
+            categoryId: catId,
+            sortOrder: i + 1,
+          })
           .returning();
         subcategoryMap[sub.slug] = insertedSub[0].id;
       }

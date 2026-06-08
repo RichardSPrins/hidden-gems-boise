@@ -4,6 +4,7 @@
 
 import BaseLayout from "./BaseLayout.astro";
 import type { Props as BaseProps } from "./BaseLayout.astro";
+import { getCategoriesWithSubs } from "@/lib/categories";
 
 export interface Props extends BaseProps {
   transparentNav?: boolean; // for hero pages where nav starts transparent
@@ -17,17 +18,10 @@ const navLinks = [
   { label: "Blog", href: "/blog" },
 ];
 
-// Top-level categories surfaced in the nav. Keep in sync with seed.ts.
-const navCategories: { name: string; slug: string }[] = [
-  { name: "Food & Drink", slug: "food-and-drink" },
-  { name: "Health & Wellness", slug: "health-and-wellness" },
-  { name: "Shopping", slug: "shopping" },
-  { name: "Home Services", slug: "home-services" },
-  { name: "Arts & Entertainment", slug: "arts-and-entertainment" },
-  { name: "Professional Services", slug: "professional-services" },
-  { name: "Education", slug: "education" },
-  { name: "Automotive", slug: "automotive" },
-];
+// Top-level categories surfaced in the nav. Sourced from the `category` table
+// (managed via /admin/categories) and served through an in-process 60s cache,
+// so every page render hits one cached read instead of querying.
+const navCategories = await getCategoriesWithSubs();
 
 const user = Astro.locals.user;
 const userRole = (user as { role?: string } | null)?.role;

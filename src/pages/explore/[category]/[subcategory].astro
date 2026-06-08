@@ -2,25 +2,10 @@
 // src/pages/explore/[category]/[subcategory].astro
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { GET } from "@/pages/api/web/explore/category";
+import { categoryHeroImage } from "@/lib/categories";
 
-const categoryHeroImages: Record<string, string> = {
-  "food-and-drink":
-    "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&fit=crop&q=80",
-  "health-and-wellness":
-    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1600&auto=format&fit=crop&q=80",
-  shopping:
-    "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1600&auto=format&fit=crop&q=80",
-  "home-services":
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&auto=format&fit=crop&q=80",
-  "arts-and-entertainment":
-    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=80",
-  "professional-services":
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&auto=format&fit=crop&q=80",
-  education:
-    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1600&auto=format&fit=crop&q=80",
-  automotive:
-    "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1600&auto=format&fit=crop&q=80",
-};
+// Hero image now comes from the parent category row (managed in
+// /admin/categories), via the explore/category API.
 
 const priceMap: Record<string, string> = {
   ONE: "$",
@@ -77,9 +62,7 @@ if (!activeSubcategory) {
   return Astro.redirect(`/explore/${activeCategory.slug}`);
 }
 
-const heroImage =
-  categoryHeroImages[activeCategory.slug] ??
-  "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600&auto=format&fit=crop&q=80";
+const heroImage = categoryHeroImage(activeCategory);
 const heroDescription = `Discover the best ${activeSubcategory.name} across Boise and the Treasure Valley.`;
 
 // ─── Helpers ──────────────────────────────────────────────
