@@ -32,5 +32,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
+  // Claiming is locked down: a claim must tie to a logged-in account so admin
+  // approval can grant that user portal access (sets business.ownerId).
+  if (path.startsWith("/claim")) {
+    if (!context.locals.user) {
+      return context.redirect(`/auth/login?next=${encodeURIComponent(path)}`);
+    }
+  }
+
   return next();
 });

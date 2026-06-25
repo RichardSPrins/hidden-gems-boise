@@ -81,24 +81,10 @@ const prefillName = url.searchParams.get("name") ?? "";
         </button>
       </div>
 
-      <!-- STEP 3: Verify ownership -->
-      <div class="claim-step claim-step-locked hidden" id="step-verify">
-        <div class="claim-step-header">
-          <div class="claim-step-num">3</div>
-          <div>
-            <h2 class="claim-step-title">Verify Ownership</h2>
-            <p class="claim-step-sub">
-              Choose how you'd like us to verify you own this business.
-            </p>
-          </div>
-        </div>
-        <div class="verify-methods" id="verify-methods"></div>
-      </div>
-
-      <!-- STEP 4: Your info -->
+      <!-- STEP 3: Your info -->
       <div class="claim-step claim-step-locked hidden" id="step-info">
         <div class="claim-step-header">
-          <div class="claim-step-num">4</div>
+          <div class="claim-step-num">3</div>
           <div>
             <h2 class="claim-step-title">Your Information</h2>
             <p class="claim-step-sub">
@@ -863,7 +849,9 @@ const prefillName = url.searchParams.get("name") ?? "";
 <script>
   // State
   let selectedBiz: any = null;
-  let selectedVerification: string | null = null;
+  // Verification method is hardcoded for now — the in-flow selection step is
+  // hidden. Claims are verified manually by an admin.
+  const selectedVerification = "email";
 
   const searchInput = document.getElementById(
     "search-input",
@@ -876,14 +864,10 @@ const prefillName = url.searchParams.get("name") ?? "";
 
   const stepSearch = document.getElementById("step-search") as HTMLDivElement;
   const stepConfirm = document.getElementById("step-confirm") as HTMLDivElement;
-  const stepVerify = document.getElementById("step-verify") as HTMLDivElement;
   const stepInfo = document.getElementById("step-info") as HTMLDivElement;
 
   const selectedBizCard = document.getElementById(
     "selected-biz-card",
-  ) as HTMLDivElement;
-  const verifyMethodsWrap = document.getElementById(
-    "verify-methods",
   ) as HTMLDivElement;
   const changeListingBtn = document.getElementById(
     "change-listing-btn",
@@ -1010,43 +994,20 @@ const prefillName = url.searchParams.get("name") ?? "";
     `;
     selectedBizCard.style.cssText =
       "display:grid;grid-template-columns:72px 1fr;gap:1rem;align-items:center;padding:1rem 1.25rem;background:rgba(201,168,76,0.05);border:1.5px solid rgba(201,168,76,0.25);border-radius:10px;margin-bottom:0.75rem;";
-    // Render verification methods
-    verifyMethodsWrap.innerHTML = "";
-    data.verificationMethods.forEach((method: any) => {
-      const label = document.createElement("label");
-      label.className = "verify-method-label";
-      label.innerHTML = `
-        <input type="radio" name="verify-method" value="${method.id}" class="verify-method-radio" />
-        <div>
-          <div class="verify-method-name">${method.label}</div>
-          <div class="verify-method-desc">${method.description}</div>
-        </div>
-      `;
-      label.querySelector("input")?.addEventListener("change", () => {
-        selectedVerification = method.id;
-        completeStep(stepVerify);
-        unlockStep(stepInfo, true);
-      });
-      verifyMethodsWrap.appendChild(label);
-    });
-
+    // Verification selection is hidden — go straight to the info step.
     completeStep(stepSearch);
     unlockStep(stepConfirm); // only scroll to step 2
-    stepVerify.classList.remove("hidden", "claim-step-locked");
     stepInfo.classList.remove("hidden", "claim-step-locked");
   }
 
   // Change listing
   changeListingBtn?.addEventListener("click", () => {
     selectedBiz = null;
-    selectedVerification = null;
     stepSearch.classList.remove("completed");
     stepSearch.classList.add("active");
     lockStep(stepConfirm);
-    lockStep(stepVerify);
     lockStep(stepInfo);
     stepConfirm.classList.add("hidden");
-    stepVerify.classList.add("hidden");
     stepInfo.classList.add("hidden");
     searchResults.innerHTML = "";
     searchResults.classList.add("hidden");

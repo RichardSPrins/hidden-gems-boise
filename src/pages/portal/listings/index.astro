@@ -1,3 +1,75 @@
 ---
-return Astro.redirect("/portal");
+import PortalLayout from "@/layouts/PortalLayout.astro";
+import { portalUser, listOwnedBusinesses } from "@/lib/portal";
+
+const user = portalUser(Astro.locals);
+if (!user) return Astro.redirect("/auth/login?next=/portal/listings");
+
+const owned = await listOwnedBusinesses(user.id);
+
+function primaryImage(b: (typeof owned)[number]) {
+  return b.images?.find((i) => i.isPrimary)?.url ?? b.images?.[0]?.url ?? null;
+}
 ---
+
+<PortalLayout title="My Listings" activeSection="listings">
+  <div slot="page-header" class="mb-6 flex items-center justify-between gap-4">
+    <div>
+      <h1 class="font-display text-3xl text-gem-text">My Listings</h1>
+      <p class="text-gem-text-muted text-sm mt-1">
+        Listings you manage on Hidden Gems.
+      </p>
+    </div>
+    <a
+      href="/claim"
+      class="text-sm font-semibold text-gem-gold hover:underline no-underline shrink-0"
+      >+ Claim a listing</a
+    >
+  </div>
+
+  {
+    owned.length === 0 ? (
+      <div class="bg-white border border-gem-border rounded-2xl p-8 text-center max-w-2xl">
+        <p class="text-sm text-gem-text-muted mb-4">
+          You don't manage any listings yet.
+        </p>
+        <a
+          href="/claim"
+          class="inline-block bg-gem-gold text-gem-dark font-semibold px-5 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors no-underline"
+        >
+          Claim your business
+        </a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl">
+        {owned.map((b) => (
+          <a
+            href={`/portal/listings/${b.id}`}
+            class="bg-white border border-gem-border rounded-2xl overflow-hidden hover:border-gem-gold transition-colors no-underline"
+          >
+            <div class="aspect-[16/9] bg-gem-stone overflow-hidden">
+              {primaryImage(b) ? (
+                <img
+                  src={primaryImage(b)}
+                  alt={b.name}
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center text-gem-text-subtle text-sm">
+                  No photo yet
+                </div>
+              )}
+            </div>
+            <div class="p-4">
+              <p class="font-medium text-gem-text">{b.name}</p>
+              <p class="text-xs text-gem-text-subtle mt-0.5">
+                {b.category?.name}
+              </p>
+            </div>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</PortalLayout>

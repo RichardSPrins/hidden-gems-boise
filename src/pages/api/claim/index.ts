@@ -4,9 +4,23 @@ import { db } from "@/lib/db";
 import { business } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { sendSubmissionToGhl } from "@/lib/ghl";
+import { notifyAdmin } from "@/lib/email/notify";
+import { claimSubmittedAdminEmail } from "@/lib/email/templates";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    // Claiming is locked down: only logged-in users can claim, so an approved
+    // claim can grant that account portal access (ownerId).
+    const user = locals.user as
+      | { id: string; email?: string }
+      | null;
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "You must be signed in to claim a listing." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await request.json();
 
     const {
@@ -73,6 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
       .update(business)
       .set({
         claimStatus: "PENDING",
+        claimUserId: user.id,
         claimOwnerName: ownerName.trim(),
         claimOwnerEmail: ownerEmail.trim(),
         claimOwnerPhone: ownerPhone?.trim() ?? null,
@@ -81,6 +96,20 @@ export const POST: APIRoute = async ({ request }) => {
         claimSubmittedAt: new Date(),
       })
       .where(eq(business.id, businessId));
+
+    // Notify the team inbox so a human can review in /admin/claims.
+    void notifyAdmin(
+      claimSubmittedAdminEmail({
+        businessName: biz.name,
+        ownerName,
+        ownerEmail,
+        ownerPhone: ownerPhone?.trim() ?? null,
+        accountEmail: user.email ?? null,
+        verificationMethod,
+        notes: notes?.trim() ?? null,
+        url: new URL("/admin/claims", request.url).toString(),
+      })
+    );
 
     const primaryLocation = biz.locations?.[0];
     void sendSubmissionToGhl({

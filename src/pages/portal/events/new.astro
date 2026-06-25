@@ -1,3 +1,242 @@
 ---
-return Astro.redirect("/portal");
+import PortalLayout from "@/layouts/PortalLayout.astro";
+import { db } from "@/lib/db";
+import { business, location } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
+import { portalUser } from "@/lib/portal";
+
+const user = portalUser(Astro.locals);
+if (!user) return Astro.redirect("/auth/login?next=/portal/events/new");
+
+const owned = await db.query.business.findMany({
+  where: eq(business.ownerId, user.id),
+  columns: { id: true, name: true },
+  with: {
+    locations: {
+      columns: { id: true, address: true, city: true },
+      orderBy: asc(location.address),
+    },
+  },
+});
+
+if (owned.length === 0) return Astro.redirect("/portal/events");
+
+const CATEGORIES = [
+  ["GRAND_OPENING", "Grand opening"],
+  ["SALE_AND_PROMOTION", "Sale & promotion"],
+  ["WORKSHOP_AND_CLASS", "Workshop & class"],
+  ["LIVE_MUSIC_AND_ENTERTAINMENT", "Live music & entertainment"],
+  ["COMMUNITY_AND_NETWORKING", "Community & networking"],
+  ["FOOD_AND_DRINK_SPECIAL", "Food & drink special"],
+  ["SEASONAL_AND_HOLIDAY", "Seasonal & holiday"],
+  ["CHARITY_AND_FUNDRAISER", "Charity & fundraiser"],
+  ["OTHER", "Other"],
+];
+const RECURRENCE = ["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY"];
 ---
+
+<PortalLayout title="New event" activeSection="events">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/portal/events" class="hover:text-gem-gold">Events</a>
+      <span class="mx-2">/</span>
+      <span>New</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">New event</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      We review new events before they appear on the site.
+    </p>
+  </div>
+
+  <form id="event-form" class="space-y-6 max-w-3xl">
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Business</label>
+          <select
+            name="businessId"
+            id="businessId"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            {owned.map((b) => <option value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Location (optional)</label>
+          <select
+            name="locationId"
+            id="locationId"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Title</label>
+        <input
+          name="title"
+          required
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Description</label>
+        <textarea
+          name="description"
+          rows="4"
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        ></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Category</label>
+          <select
+            name="category"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            {CATEGORIES.map(([v, l]) => <option value={v}>{l}</option>)}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Ticket URL (optional)</label>
+          <input
+            name="ticketUrl"
+            type="url"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Starts</label>
+          <input
+            name="startDateTime"
+            type="datetime-local"
+            required
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Ends (optional)</label>
+          <input
+            name="endDateTime"
+            type="datetime-local"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="isRecurring" id="isRecurring" value="1" />
+        This event recurs
+      </label>
+      <div
+        id="recurrence-fields"
+        class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"
+      >
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Frequency</label>
+          <select
+            name="recurrenceFrequency"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            {RECURRENCE.map((r) => <option value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Recurs until</label>
+          <input
+            name="recurrenceEndsAt"
+            type="datetime-local"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="submit"
+        id="submit-btn"
+        class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50"
+        >Submit for review</button
+      >
+      <a
+        href="/portal/events"
+        class="text-sm text-gem-text-muted hover:text-gem-text no-underline"
+        >Cancel</a
+      >
+      <p id="form-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <script is:inline define:vars={{ owned }}>
+    const locsByBiz = Object.fromEntries(owned.map((b) => [b.id, b.locations]));
+    const bizSel = document.getElementById("businessId");
+    const locSel = document.getElementById("locationId");
+    function fillLocations() {
+      const locs = locsByBiz[bizSel.value] || [];
+      locSel.innerHTML =
+        '<option value="">—</option>' +
+        locs
+          .map(
+            (l) =>
+              `<option value="${l.id}">${l.address}, ${l.city}</option>`,
+          )
+          .join("");
+    }
+    bizSel.addEventListener("change", fillLocations);
+    fillLocations();
+
+    const recurringChk = document.getElementById("isRecurring");
+    const recurrenceFields = document.getElementById("recurrence-fields");
+    recurringChk.addEventListener("change", () => {
+      recurrenceFields.classList.toggle("hidden", !recurringChk.checked);
+    });
+
+    const form = document.getElementById("event-form");
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("form-msg");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+      msg.classList.add("hidden");
+      const fd = new FormData(form);
+      const payload = {
+        businessId: fd.get("businessId"),
+        locationId: fd.get("locationId") || null,
+        title: fd.get("title"),
+        description: fd.get("description") || null,
+        category: fd.get("category"),
+        ticketUrl: fd.get("ticketUrl") || null,
+        startDateTime: fd.get("startDateTime"),
+        endDateTime: fd.get("endDateTime") || null,
+        isRecurring: fd.get("isRecurring") === "1",
+        recurrenceFrequency: fd.get("recurrenceFrequency") || null,
+        recurrenceEndsAt: fd.get("recurrenceEndsAt") || null,
+      };
+      try {
+        const res = await fetch("/api/portal/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Failed");
+        window.location.href = "/portal/events";
+      } catch (err) {
+        msg.textContent = err.message || "Failed to submit.";
+        msg.className = "text-sm text-red-600 ml-auto";
+        msg.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Submit for review";
+      }
+    });
+  </script>
+</PortalLayout>

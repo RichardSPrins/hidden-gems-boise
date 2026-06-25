@@ -240,6 +240,14 @@ export const business = pgTable("business", {
   isGemOfWeek: boolean("is_gem_of_week").notNull().default(false),
   gemWeekDate: timestamp("gem_week_date"),
   claimStatus: text("claim_status"),
+  /**
+   * The logged-in user who submitted the pending claim. Distinct from
+   * `ownerId`, which stays null until an admin approves the claim and grants
+   * portal access. On approval we copy claimUserId → ownerId.
+   */
+  claimUserId: text("claim_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
   claimOwnerName: text("claim_owner_name"),
   claimOwnerEmail: text("claim_owner_email"),
   claimOwnerPhone: text("claim_owner_phone"),
@@ -572,6 +580,10 @@ export const amenityRelations = relations(amenity, ({ one, many }) => ({
 
 export const businessRelations = relations(business, ({ one, many }) => ({
   owner: one(user, { fields: [business.ownerId], references: [user.id] }),
+  claimUser: one(user, {
+    fields: [business.claimUserId],
+    references: [user.id],
+  }),
   category: one(category, {
     fields: [business.categoryId],
     references: [category.id],

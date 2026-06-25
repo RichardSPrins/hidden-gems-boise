@@ -10,6 +10,8 @@ export interface Props extends BaseProps {
     | "dashboard"
     | "businesses"
     | "submissions"
+    | "claims"
+    | "events"
     | "categories"
     | "gems"
     | "reviews";
@@ -18,6 +20,21 @@ export interface Props extends BaseProps {
 const { activeSection, ...baseProps } = Astro.props;
 
 const user = Astro.locals.user;
+
+// Pending counts for nav badges — cheap, run once per admin page render.
+const { db } = await import("@/lib/db");
+const { business, event } = await import("@/lib/db/schema");
+const { eq, count } = await import("drizzle-orm");
+const [[{ pendingClaims }], [{ pendingEvents }]] = await Promise.all([
+  db
+    .select({ pendingClaims: count() })
+    .from(business)
+    .where(eq(business.claimStatus, "PENDING")),
+  db
+    .select({ pendingEvents: count() })
+    .from(event)
+    .where(eq(event.isActive, false)),
+]);
 
 const navItems = [
   { label: "Dashboard", href: "/admin", section: "dashboard", icon: "▦" },
@@ -32,6 +49,20 @@ const navItems = [
     href: "/admin/submissions",
     section: "submissions",
     icon: "✎",
+  },
+  {
+    label: "Claims",
+    href: "/admin/claims",
+    section: "claims",
+    icon: "⚑",
+    badge: pendingClaims,
+  },
+  {
+    label: "Events",
+    href: "/admin/events",
+    section: "events",
+    icon: "🗓",
+    badge: pendingEvents,
   },
   {
     label: "Categories",
@@ -112,6 +143,11 @@ const navItems = [
                 >
                   <span class="text-base font-mono">{item.icon}</span>
                   {item.label}
+                  {item.badge ? (
+                    <span class="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gem-gold text-gem-dark text-xs font-semibold">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </a>
               </li>
             ))

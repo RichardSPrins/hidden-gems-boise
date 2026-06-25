@@ -1,69 +1,173 @@
 ---
 import PortalLayout from "@/layouts/PortalLayout.astro";
+import { db } from "@/lib/db";
+import { business } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
+import { portalUser, listOwnedBusinesses } from "@/lib/portal";
 
-const user = Astro.locals.user as
-  | { name?: string | null; email?: string; emailVerified?: boolean }
-  | null;
-const unverified = user && user.emailVerified === false;
+const user = portalUser(Astro.locals);
+if (!user) return Astro.redirect("/auth/login?next=/portal");
+
+const unverified =
+  (Astro.locals.user as { emailVerified?: boolean } | null)?.emailVerified ===
+  false;
+
+const [owned, pendingClaims] = await Promise.all([
+  listOwnedBusinesses(user.id),
+  db.query.business.findMany({
+    where: and(
+      eq(business.claimUserId, user.id),
+      eq(business.claimStatus, "PENDING"),
+    ),
+    columns: { id: true, name: true, slug: true, claimSubmittedAt: true },
+  }),
+]);
+
+function primaryImage(b: (typeof owned)[number]) {
+  return b.images?.find((i) => i.isPrimary)?.url ?? b.images?.[0]?.url ?? null;
+}
 ---
 
-<PortalLayout title="Business Portal">
+<PortalLayout title="Business Portal" activeSection="listings">
   <div slot="page-header" class="mb-6">
-    <h1 class="font-display text-3xl text-gem-text">Welcome{user?.name ? `, ${user.name}` : ""}</h1>
+    <h1 class="font-display text-3xl text-gem-text">
+      Welcome{user.name ? `, ${user.name}` : ""}
+    </h1>
     <p class="text-gem-text-muted text-sm mt-1">
       Manage the listings you've claimed on Hidden Gems.
     </p>
   </div>
 
-  {unverified && (
-    <div class="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-2xl p-4 mb-4 max-w-2xl flex items-start justify-between gap-4">
-      <p class="text-sm">
-        <strong>Confirm your email.</strong> We sent a verification link to{" "}
-        <span class="font-mono">{user?.email}</span>. Click it to keep full
-        access to your account.
-      </p>
-      <button
-        type="button"
-        id="resend-verify"
-        class="text-sm font-semibold text-yellow-900 hover:underline shrink-0"
+  {
+    unverified && (
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-2xl p-4 mb-4 max-w-2xl flex items-start justify-between gap-4">
+        <p class="text-sm">
+          <strong>Confirm your email.</strong> We sent a verification link to{" "}
+          <span class="font-mono">{user.email}</span>. Click it to keep full
+          access to your account.
+        </p>
+        <button
+          type="button"
+          id="resend-verify"
+          class="text-sm font-semibold text-yellow-900 hover:underline shrink-0"
+        >
+          Resend
+        </button>
+      </div>
+    )
+  }
+
+  {
+    pendingClaims.length > 0 && (
+      <section class="mb-6 max-w-3xl">
+        <h2 class="font-display text-lg text-gem-text mb-2">Pending claims</h2>
+        <div class="bg-white border border-gem-border rounded-2xl divide-y divide-gem-border">
+          {pendingClaims.map((c) => (
+            <div class="flex items-center justify-between gap-4 p-4">
+              <div>
+                <p class="font-medium text-gem-text">{c.name}</p>
+                <p class="text-xs text-gem-text-subtle">
+                  Submitted{" "}
+                  {c.claimSubmittedAt
+                    ? new Date(c.claimSubmittedAt).toLocaleDateString()
+                    : "recently"}{" "}
+                  · under review
+                </p>
+              </div>
+              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Pending
+              </span>
+            </div>
+          ))}
+        </div>
+        <p class="text-xs text-gem-text-subtle mt-2">
+          We verify every claim within 1–2 business days. You'll get an email
+          when yours is approved.
+        </p>
+      </section>
+    )
+  }
+
+  <section class="max-w-3xl">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-display text-lg text-gem-text">Your listings</h2>
+      <a
+        href="/claim"
+        class="text-sm font-semibold text-gem-gold hover:underline no-underline"
+        >+ Claim a listing</a
       >
-        Resend
-      </button>
     </div>
-  )}
 
-  <div class="bg-white border border-gem-border rounded-2xl p-8 max-w-2xl">
-    <h2 class="font-display text-xl text-gem-text mb-2">The business portal is coming soon</h2>
-    <p class="text-sm text-gem-text-muted mb-4">
-      We're focused on building the directory itself first. The portal — where you'll manage your claimed listings, hours, photos, and events — is in active development.
-    </p>
-    <p class="text-sm text-gem-text-muted">
-      In the meantime, if you've submitted a listing or claim, the team is reviewing it manually.
-      Email <a href="mailto:hello@marketing.hiddengemsboise.com" class="text-gem-gold hover:underline">hello@marketing.hiddengemsboise.com</a> with any questions.
-    </p>
-  </div>
+    {
+      owned.length === 0 ? (
+        <div class="bg-white border border-gem-border rounded-2xl p-8 text-center">
+          <p class="text-sm text-gem-text-muted mb-4">
+            You don't manage any listings yet.
+          </p>
+          <a
+            href="/claim"
+            class="inline-block bg-gem-gold text-gem-dark font-semibold px-5 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors no-underline"
+          >
+            Claim your business
+          </a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {owned.map((b) => (
+            <a
+              href={`/portal/listings/${b.id}`}
+              class="bg-white border border-gem-border rounded-2xl overflow-hidden hover:border-gem-gold transition-colors no-underline"
+            >
+              <div class="aspect-[16/9] bg-gem-stone overflow-hidden">
+                {primaryImage(b) ? (
+                  <img
+                    src={primaryImage(b)}
+                    alt={b.name}
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="w-full h-full flex items-center justify-center text-gem-text-subtle text-sm">
+                    No photo yet
+                  </div>
+                )}
+              </div>
+              <div class="p-4">
+                <p class="font-medium text-gem-text">{b.name}</p>
+                <p class="text-xs text-gem-text-subtle mt-0.5">
+                  {b.category?.name}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </section>
 
-  {unverified && (
-    <script is:inline define:vars={{ email: user?.email }}>
-      const btn = document.getElementById("resend-verify");
-      btn?.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Sending…";
-        try {
-          await fetch("/api/auth/send-verification-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              callbackURL: "/auth/login?verified=true",
-            }),
-          });
-          btn.textContent = "Sent ✓";
-        } catch {
-          btn.textContent = "Failed — try again";
-          btn.disabled = false;
-        }
-      });
-    </script>
-  )}
+  {
+    unverified && (
+      <script is:inline define:vars={{ email: user.email }}>
+        const btn = document.getElementById("resend-verify");
+        btn?.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Sending…";
+          try {
+            await fetch("/api/auth/send-verification-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email,
+                callbackURL: "/auth/login?verified=true",
+              }),
+            });
+            btn.textContent = "Sent ✓";
+          } catch {
+            btn.textContent = "Failed — try again";
+            btn.disabled = false;
+          }
+        });
+      </script>
+    )
+  }
 </PortalLayout>

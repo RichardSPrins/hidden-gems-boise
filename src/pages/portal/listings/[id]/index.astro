@@ -1,3 +1,712 @@
 ---
-return Astro.redirect("/portal");
+import PortalLayout from "@/layouts/PortalLayout.astro";
+import { db } from "@/lib/db";
+import { category, subcategory } from "@/lib/db/schema";
+import { asc } from "drizzle-orm";
+import { portalUser, getOwnedBusiness } from "@/lib/portal";
+
+const user = portalUser(Astro.locals);
+if (!user) return Astro.redirect("/auth/login?next=/portal/listings");
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/portal/listings");
+
+const biz = await getOwnedBusiness(user.id, id);
+if (!biz) return Astro.redirect("/portal/listings");
+
+const categories = await db.query.category.findMany({
+  orderBy: asc(category.name),
+  with: { subcategories: { orderBy: asc(subcategory.name) } },
+});
+
+const PLATFORMS = [
+  "INSTAGRAM",
+  "FACEBOOK",
+  "TIKTOK",
+  "TWITTER",
+  "YOUTUBE",
+  "LINKEDIN",
+  "YELP",
+  "TRIPADVISOR",
+  "OTHER",
+];
+
+const images = biz.images
+  .slice()
+  .sort(
+    (a, b) =>
+      Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder,
+  );
 ---
+
+<PortalLayout title={biz.name} activeSection="listings">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/portal/listings" class="hover:text-gem-gold">My Listings</a>
+      <span class="mx-2">/</span>
+      <span>{biz.name}</span>
+    </nav>
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="font-display text-3xl text-gem-text">{biz.name}</h1>
+        <p class="text-gem-text-muted text-sm mt-1">
+          {biz.category?.name}{
+            biz.subcategory ? ` › ${biz.subcategory.name}` : ""
+          }
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a
+          href={`/listings/${biz.slug}`}
+          target="_blank"
+          rel="noopener"
+          class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-white no-underline"
+          >View on site ↗</a
+        >
+        <a
+          href={`/portal/listings/${biz.id}/locations`}
+          class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-white no-underline"
+          >Locations</a
+        >
+        <a
+          href="/portal/events"
+          class="text-sm px-3 py-2 rounded-lg border border-gem-border hover:bg-white no-underline"
+          >Events</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- IMAGES -->
+  <section
+    id="images-section"
+    class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 max-w-3xl mb-6"
+    data-business-id={biz.id}
+  >
+    <div class="flex items-center justify-between gap-4">
+      <h2 class="font-display text-lg text-gem-text">Photos</h2>
+      <label
+        class="text-sm font-semibold text-gem-dark bg-gem-gold hover:bg-gem-gold-light px-3 py-1.5 rounded-lg cursor-pointer"
+      >
+        + Upload
+        <input
+          id="image-upload-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          class="hidden"
+        />
+      </label>
+    </div>
+    <p id="image-upload-status" class="text-xs text-gem-text-subtle hidden"></p>
+
+    <div id="images-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {
+        images.length === 0 ? (
+          <p class="col-span-full text-sm text-gem-text-muted py-4">
+            No photos yet. Upload one to set your listing's main image.
+          </p>
+        ) : (
+          images.map((img) => (
+            <div
+              class="border border-gem-border rounded-lg overflow-hidden bg-gem-mist"
+              data-image-id={img.id}
+            >
+              <div class="aspect-square bg-gem-stone overflow-hidden">
+                <img
+                  src={img.url}
+                  alt={img.alt ?? ""}
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div class="p-2 space-y-1">
+                <input
+                  type="text"
+                  data-alt-input
+                  value={img.alt ?? ""}
+                  placeholder="Alt text"
+                  class="w-full text-xs px-2 py-1 rounded border border-gem-border bg-white"
+                />
+                <div class="flex items-center justify-between gap-2">
+                  {img.isPrimary ? (
+                    <span class="text-xs font-semibold text-gem-gold">
+                      ★ Primary
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      data-set-primary
+                      class="text-xs text-gem-text-muted hover:text-gem-gold"
+                    >
+                      Set primary
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-delete
+                    class="text-xs text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )
+      }
+    </div>
+  </section>
+
+  <!-- DETAILS -->
+  <form id="edit-form" class="space-y-6 max-w-3xl" data-id={biz.id}>
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Details</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Name</label>
+        <input
+          name="name"
+          type="text"
+          value={biz.name}
+          required
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Category</label>
+          <select
+            name="categoryId"
+            id="categoryId"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            {
+              categories.map((c) => (
+                <option value={c.id} selected={c.id === biz.categoryId}>
+                  {c.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Subcategory</label>
+          <select
+            name="subcategoryId"
+            id="subcategoryId"
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          >
+            <option value="">—</option>
+            {
+              categories
+                .find((c) => c.id === biz.categoryId)
+                ?.subcategories.map((s) => (
+                  <option value={s.id} selected={s.id === biz.subcategoryId}>
+                    {s.name}
+                  </option>
+                ))
+            }
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Bio</label>
+        <textarea id="bio-editor" name="bio" rows="10" class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold">{biz.bio ?? ""}</textarea>
+        <p class="text-xs text-gem-text-muted mt-1">
+          Markdown supported. Drag an image into the editor to upload it.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Website</label>
+          <input
+            name="websiteUrl"
+            type="url"
+            value={biz.websiteUrl ?? ""}
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Booking URL</label>
+          <input
+            name="bookingUrl"
+            type="url"
+            value={biz.bookingUrl ?? ""}
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+
+      <div class="max-w-[12rem]">
+        <label class="block text-sm font-medium mb-1.5">Price point</label>
+        <select
+          name="pricePoint"
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        >
+          {
+            ["", "ONE", "TWO", "THREE", "FOUR"].map((p) => (
+              <option value={p} selected={(biz.pricePoint ?? "") === p}>
+                {p === "ONE"
+                  ? "$"
+                  : p === "TWO"
+                    ? "$$"
+                    : p === "THREE"
+                      ? "$$$"
+                      : p === "FOUR"
+                        ? "$$$$"
+                        : "—"}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Contact</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Phone</label>
+          <input
+            name="phone"
+            type="tel"
+            value={biz.contact?.phone ?? ""}
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Public email</label>
+          <input
+            name="email"
+            type="email"
+            value={biz.contact?.email ?? ""}
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="submit"
+        id="submit-btn"
+        class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50"
+      >
+        Save changes
+      </button>
+      <p id="form-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <!-- SOCIAL LINKS -->
+  <section
+    class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 max-w-3xl mt-6"
+    data-business-id={biz.id}
+  >
+    <h2 class="font-display text-lg text-gem-text">Social links</h2>
+    <div id="socials-list" class="space-y-2">
+      {
+        biz.socials.map((s) => (
+          <div class="flex items-center gap-2" data-social-row>
+            <select
+              data-social-platform
+              class="px-2 py-2 rounded-lg border border-gem-border text-sm w-40"
+            >
+              {PLATFORMS.map((p) => (
+                <option value={p} selected={p === s.platform}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <input
+              data-social-url
+              type="url"
+              value={s.url}
+              placeholder="https://…"
+              class="flex-1 px-3 py-2 rounded-lg border border-gem-border text-sm"
+            />
+            <button
+              type="button"
+              data-social-remove
+              class="text-red-600 text-sm px-2"
+            >
+              ✕
+            </button>
+          </div>
+        ))
+      }
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        id="add-social"
+        class="text-sm font-semibold text-gem-gold hover:underline"
+        >+ Add link</button
+      >
+      <button
+        type="button"
+        id="save-socials"
+        class="bg-gem-text text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90"
+        >Save links</button
+      >
+      <p id="socials-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </section>
+
+  <!-- FAQs -->
+  <section
+    class="bg-white border border-gem-border rounded-2xl p-6 space-y-4 max-w-3xl mt-6"
+    data-business-id={biz.id}
+  >
+    <h2 class="font-display text-lg text-gem-text">FAQs</h2>
+    <div id="faqs-list" class="space-y-3">
+      {
+        biz.faqs
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((f) => (
+            <div class="space-y-1 border border-gem-border rounded-lg p-3" data-faq-row>
+              <div class="flex items-center gap-2">
+                <input
+                  data-faq-question
+                  type="text"
+                  value={f.question}
+                  placeholder="Question"
+                  class="flex-1 px-3 py-2 rounded-lg border border-gem-border text-sm font-medium"
+                />
+                <button
+                  type="button"
+                  data-faq-remove
+                  class="text-red-600 text-sm px-2"
+                >
+                  ✕
+                </button>
+              </div>
+              <textarea
+                data-faq-answer
+                rows="2"
+                placeholder="Answer"
+                class="w-full px-3 py-2 rounded-lg border border-gem-border text-sm"
+              >{f.answer}</textarea>
+            </div>
+          ))
+      }
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        id="add-faq"
+        class="text-sm font-semibold text-gem-gold hover:underline"
+        >+ Add FAQ</button
+      >
+      <button
+        type="button"
+        id="save-faqs"
+        class="bg-gem-text text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90"
+        >Save FAQs</button
+      >
+      <p id="faqs-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </section>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/easymde@2.18.0/dist/easymde.min.css"
+  />
+  <script is:inline src="https://unpkg.com/easymde@2.18.0/dist/easymde.min.js"
+  ></script>
+
+  <script
+    is:inline
+    define:vars={{
+      categories,
+      businessId: biz.id,
+      currentSubId: biz.subcategoryId,
+      platforms: PLATFORMS,
+    }}
+  >
+    // ── Bio editor (EasyMDE) with portal image upload ──────────────────
+    const bioMde = new EasyMDE({
+      element: document.getElementById("bio-editor"),
+      autoDownloadFontAwesome: true,
+      spellChecker: false,
+      status: ["lines", "words"],
+      minHeight: "200px",
+      toolbar: [
+        "bold", "italic", "heading", "|",
+        "quote", "unordered-list", "ordered-list", "|",
+        "link", "image", "upload-image", "|",
+        "preview", "side-by-side", "fullscreen", "|", "guide",
+      ],
+      uploadImage: true,
+      imageMaxSize: 5 * 1024 * 1024,
+      imageAccept: "image/jpeg,image/png,image/webp",
+      imageUploadFunction: async (file, onSuccess, onError) => {
+        try {
+          const body = new FormData();
+          body.append("file", file);
+          body.append("businessId", businessId);
+          const res = await fetch("/api/portal/upload", { method: "POST", body });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            onError(data.error || "Upload failed.");
+            return;
+          }
+          const data = await res.json();
+          onSuccess(data.url);
+        } catch {
+          onError("Network error during upload.");
+        }
+      },
+    });
+
+    // ── Category → subcategory cascade ─────────────────────────────────
+    const catSel = document.getElementById("categoryId");
+    const subSel = document.getElementById("subcategoryId");
+    const byId = Object.fromEntries(categories.map((c) => [c.id, c.subcategories]));
+    catSel.addEventListener("change", () => {
+      const subs = byId[catSel.value] || [];
+      subSel.innerHTML =
+        '<option value="">—</option>' +
+        subs
+          .map(
+            (s) =>
+              `<option value="${s.id}"${s.id === currentSubId ? " selected" : ""}>${s.name}</option>`,
+          )
+          .join("");
+    });
+
+    // ── Save details ───────────────────────────────────────────────────
+    const form = document.getElementById("edit-form");
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("form-msg");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      msg.classList.add("hidden");
+      const fd = new FormData(form);
+      const payload = {
+        name: fd.get("name"),
+        bio: bioMde.value() || null,
+        websiteUrl: fd.get("websiteUrl") || null,
+        bookingUrl: fd.get("bookingUrl") || null,
+        categoryId: fd.get("categoryId"),
+        subcategoryId: fd.get("subcategoryId") || null,
+        pricePoint: fd.get("pricePoint") || null,
+        contact: { phone: fd.get("phone") || null, email: fd.get("email") || null },
+      };
+      try {
+        const res = await fetch(`/api/portal/businesses/${businessId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error();
+        msg.textContent = "Saved.";
+        msg.className = "text-sm text-green-600 ml-auto";
+      } catch {
+        msg.textContent = "Save failed.";
+        msg.className = "text-sm text-red-600 ml-auto";
+      } finally {
+        msg.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Save changes";
+      }
+    });
+
+    // ── Image management ───────────────────────────────────────────────
+    const uploadInput = document.getElementById("image-upload-input");
+    const uploadStatus = document.getElementById("image-upload-status");
+    function setStatus(text, tone) {
+      uploadStatus.textContent = text;
+      uploadStatus.className =
+        "text-xs mt-1 " +
+        (tone === "err" ? "text-red-600" : tone === "ok" ? "text-green-700" : "text-gem-text-muted");
+      uploadStatus.classList.remove("hidden");
+    }
+    uploadInput.addEventListener("change", async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setStatus("File is larger than 5 MB.", "err");
+        uploadInput.value = "";
+        return;
+      }
+      setStatus("Uploading…");
+      try {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("businessId", businessId);
+        const upRes = await fetch("/api/portal/upload", { method: "POST", body });
+        if (!upRes.ok) {
+          const data = await upRes.json().catch(() => ({}));
+          setStatus(data.error || "Upload failed.", "err");
+          uploadInput.value = "";
+          return;
+        }
+        const upData = await upRes.json();
+        const existing = document.querySelectorAll("[data-image-id]").length;
+        const attachRes = await fetch(
+          `/api/portal/businesses/${businessId}/images`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: upData.url, isPrimary: existing === 0 }),
+          },
+        );
+        if (!attachRes.ok) {
+          setStatus("Uploaded but failed to attach.", "err");
+          return;
+        }
+        setStatus("Uploaded ✓ Reloading…", "ok");
+        window.location.reload();
+      } catch {
+        setStatus("Network error.", "err");
+        uploadInput.value = "";
+      }
+    });
+
+    document.querySelectorAll("[data-image-id]").forEach((card) => {
+      const imageId = card.dataset.imageId;
+      const altInput = card.querySelector("[data-alt-input]");
+      const setPrimaryBtn = card.querySelector("[data-set-primary]");
+      const deleteBtn = card.querySelector("[data-delete]");
+      altInput?.addEventListener("blur", async () => {
+        await fetch(`/api/portal/images/${imageId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alt: altInput.value }),
+        });
+      });
+      setPrimaryBtn?.addEventListener("click", async () => {
+        setPrimaryBtn.disabled = true;
+        const res = await fetch(`/api/portal/images/${imageId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPrimary: true }),
+        });
+        if (res.ok) window.location.reload();
+        else {
+          alert("Could not set primary.");
+          setPrimaryBtn.disabled = false;
+        }
+      });
+      deleteBtn?.addEventListener("click", async () => {
+        if (!confirm("Delete this photo?")) return;
+        deleteBtn.disabled = true;
+        const res = await fetch(`/api/portal/images/${imageId}`, { method: "DELETE" });
+        if (res.ok) card.remove();
+        else {
+          alert("Delete failed.");
+          deleteBtn.disabled = false;
+        }
+      });
+    });
+
+    // ── Social links editor ────────────────────────────────────────────
+    const socialsList = document.getElementById("socials-list");
+    const socialsMsg = document.getElementById("socials-msg");
+    function socialRow(platform = "INSTAGRAM", url = "") {
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-2";
+      row.setAttribute("data-social-row", "");
+      row.innerHTML =
+        `<select data-social-platform class="px-2 py-2 rounded-lg border border-gem-border text-sm w-40">` +
+        platforms
+          .map((p) => `<option value="${p}"${p === platform ? " selected" : ""}>${p}</option>`)
+          .join("") +
+        `</select>` +
+        `<input data-social-url type="url" value="${url.replace(/"/g, "&quot;")}" placeholder="https://…" class="flex-1 px-3 py-2 rounded-lg border border-gem-border text-sm" />` +
+        `<button type="button" data-social-remove class="text-red-600 text-sm px-2">✕</button>`;
+      row
+        .querySelector("[data-social-remove]")
+        .addEventListener("click", () => row.remove());
+      return row;
+    }
+    socialsList.querySelectorAll("[data-social-remove]").forEach((b) =>
+      b.addEventListener("click", (e) => e.target.closest("[data-social-row]").remove()),
+    );
+    document
+      .getElementById("add-social")
+      .addEventListener("click", () => socialsList.appendChild(socialRow()));
+    document.getElementById("save-socials").addEventListener("click", async () => {
+      const links = [...socialsList.querySelectorAll("[data-social-row]")]
+        .map((r) => ({
+          platform: r.querySelector("[data-social-platform]").value,
+          url: r.querySelector("[data-social-url]").value.trim(),
+        }))
+        .filter((l) => l.url);
+      socialsMsg.classList.remove("hidden");
+      socialsMsg.className = "text-sm text-gem-text-subtle ml-auto";
+      socialsMsg.textContent = "Saving…";
+      try {
+        const res = await fetch(`/api/portal/businesses/${businessId}/socials`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ links }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Failed");
+        socialsMsg.className = "text-sm text-green-600 ml-auto";
+        socialsMsg.textContent = "Saved.";
+      } catch (err) {
+        socialsMsg.className = "text-sm text-red-600 ml-auto";
+        socialsMsg.textContent = err.message || "Save failed.";
+      }
+    });
+
+    // ── FAQs editor ────────────────────────────────────────────────────
+    const faqsList = document.getElementById("faqs-list");
+    const faqsMsg = document.getElementById("faqs-msg");
+    function faqRow(q = "", a = "") {
+      const row = document.createElement("div");
+      row.className = "space-y-1 border border-gem-border rounded-lg p-3";
+      row.setAttribute("data-faq-row", "");
+      row.innerHTML =
+        `<div class="flex items-center gap-2">` +
+        `<input data-faq-question type="text" value="${q.replace(/"/g, "&quot;")}" placeholder="Question" class="flex-1 px-3 py-2 rounded-lg border border-gem-border text-sm font-medium" />` +
+        `<button type="button" data-faq-remove class="text-red-600 text-sm px-2">✕</button></div>` +
+        `<textarea data-faq-answer rows="2" placeholder="Answer" class="w-full px-3 py-2 rounded-lg border border-gem-border text-sm"></textarea>`;
+      row.querySelector("[data-faq-answer]").value = a;
+      row
+        .querySelector("[data-faq-remove]")
+        .addEventListener("click", () => row.remove());
+      return row;
+    }
+    faqsList.querySelectorAll("[data-faq-remove]").forEach((b) =>
+      b.addEventListener("click", (e) => e.target.closest("[data-faq-row]").remove()),
+    );
+    document
+      .getElementById("add-faq")
+      .addEventListener("click", () => faqsList.appendChild(faqRow()));
+    document.getElementById("save-faqs").addEventListener("click", async () => {
+      const faqs = [...faqsList.querySelectorAll("[data-faq-row]")]
+        .map((r) => ({
+          question: r.querySelector("[data-faq-question]").value.trim(),
+          answer: r.querySelector("[data-faq-answer]").value.trim(),
+        }))
+        .filter((f) => f.question && f.answer);
+      faqsMsg.classList.remove("hidden");
+      faqsMsg.className = "text-sm text-gem-text-subtle ml-auto";
+      faqsMsg.textContent = "Saving…";
+      try {
+        const res = await fetch(`/api/portal/businesses/${businessId}/faqs`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ faqs }),
+        });
+        if (!res.ok) throw new Error();
+        faqsMsg.className = "text-sm text-green-600 ml-auto";
+        faqsMsg.textContent = "Saved.";
+      } catch {
+        faqsMsg.className = "text-sm text-red-600 ml-auto";
+        faqsMsg.textContent = "Save failed.";
+      }
+    });
+  </script>
+</PortalLayout>

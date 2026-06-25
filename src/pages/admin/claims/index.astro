@@ -1,0 +1,217 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { business } from "@/lib/db/schema";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
+
+const status =
+  new URL(Astro.request.url).searchParams.get("status") ?? "PENDING";
+
+const where =
+  status === "ALL"
+    ? isNotNull(business.claimStatus)
+    : and(eq(business.claimStatus, status), isNotNull(business.claimStatus));
+
+const rows = await db.query.business.findMany({
+  where,
+  orderBy: desc(business.claimSubmittedAt),
+  limit: 200,
+  columns: {
+    id: true,
+    name: true,
+    slug: true,
+    claimStatus: true,
+    claimUserId: true,
+    claimOwnerName: true,
+    claimOwnerEmail: true,
+    claimOwnerPhone: true,
+    claimVerificationMethod: true,
+    claimNotes: true,
+    claimSubmittedAt: true,
+  },
+  with: {
+    claimUser: { columns: { email: true } },
+  },
+});
+
+const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
+---
+
+<AdminLayout title="Claims" activeSection="claims">
+  <div slot="page-header" class="mb-6">
+    <h1 class="font-display text-3xl text-gem-text">Claims</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Business owners claiming their listings. Approve to grant them portal
+      access; rejecting leaves the listing unclaimed.
+    </p>
+  </div>
+
+  <div
+    class="flex items-center gap-1 mb-4 bg-white border border-gem-border rounded-2xl p-1 w-fit"
+  >
+    {
+      tabs.map((t) => (
+        <a
+          href={`/admin/claims?status=${t}`}
+          class:list={[
+            "text-sm px-3 py-1.5 rounded-lg no-underline",
+            status === t
+              ? "bg-gem-text text-white"
+              : "text-gem-text-muted hover:text-gem-text",
+          ]}
+        >
+          {t}
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl overflow-hidden">
+    {
+      rows.length === 0 ? (
+        <div class="p-8 text-center text-sm text-gem-text-muted">
+          No claims here.
+        </div>
+      ) : (
+        <table class="w-full text-sm">
+          <thead class="bg-gem-mist text-left text-xs uppercase tracking-widest text-gem-text-subtle">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Business</th>
+              <th class="px-4 py-3 font-semibold">Claimant</th>
+              <th class="px-4 py-3 font-semibold">Account</th>
+              <th class="px-4 py-3 font-semibold">Verify</th>
+              <th class="px-4 py-3 font-semibold">Submitted</th>
+              <th class="px-4 py-3 font-semibold">Status / Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr
+                class="border-t border-gem-border align-top hover:bg-gem-mist/50"
+                data-claim-row
+                data-id={r.id}
+              >
+                <td class="px-4 py-3">
+                  <a
+                    href={`/admin/businesses/${r.id}`}
+                    class="font-medium text-gem-text hover:text-gem-gold no-underline"
+                  >
+                    {r.name}
+                  </a>
+                  <br />
+                  <a
+                    href={`/listings/${r.slug}`}
+                    target="_blank"
+                    rel="noopener"
+                    class="text-xs text-gem-text-subtle hover:text-gem-gold no-underline"
+                  >
+                    /listings/{r.slug} ↗
+                  </a>
+                </td>
+                <td class="px-4 py-3 text-gem-text-muted">
+                  {r.claimOwnerName}
+                  <br />
+                  <span class="text-xs text-gem-text-subtle">
+                    {r.claimOwnerEmail}
+                  </span>
+                  {r.claimOwnerPhone && (
+                    <>
+                      <br />
+                      <span class="text-xs text-gem-text-subtle">
+                        {r.claimOwnerPhone}
+                      </span>
+                    </>
+                  )}
+                  {r.claimNotes && (
+                    <p class="text-xs text-gem-text-subtle mt-1 italic max-w-xs">
+                      “{r.claimNotes}”
+                    </p>
+                  )}
+                </td>
+                <td class="px-4 py-3 text-xs text-gem-text-subtle">
+                  {r.claimUser?.email ?? (
+                    <span class="text-red-600">no account</span>
+                  )}
+                </td>
+                <td class="px-4 py-3 text-xs text-gem-text-subtle">
+                  {r.claimVerificationMethod ?? "—"}
+                </td>
+                <td class="px-4 py-3 text-xs text-gem-text-subtle">
+                  {r.claimSubmittedAt
+                    ? new Date(r.claimSubmittedAt).toLocaleDateString()
+                    : "—"}
+                </td>
+                <td class="px-4 py-3">
+                  {r.claimStatus === "PENDING" ? (
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        data-action="approve"
+                        class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        data-action="reject"
+                        class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gem-border text-red-600 hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span
+                      class:list={[
+                        "inline-block px-2 py-0.5 rounded-full text-xs font-medium",
+                        r.claimStatus === "APPROVED" &&
+                          "bg-green-100 text-green-700",
+                        r.claimStatus === "REJECTED" && "bg-red-100 text-red-700",
+                      ]}
+                    >
+                      {r.claimStatus}
+                    </span>
+                  )}
+                  <p data-row-msg class="text-xs mt-1 hidden" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+
+  <script is:inline>
+    document.querySelectorAll("[data-claim-row]").forEach((row) => {
+      const id = row.dataset.id;
+      const msg = row.querySelector("[data-row-msg]");
+      row.querySelectorAll("[data-action]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const action = btn.dataset.action;
+          if (action === "reject" && !confirm("Reject this claim?")) return;
+          row.querySelectorAll("[data-action]").forEach((b) => (b.disabled = true));
+          msg.className = "text-xs mt-1 text-gem-text-subtle";
+          msg.textContent = "Saving…";
+          try {
+            const res = await fetch(`/api/admin/claims/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Failed");
+            msg.className = "text-xs mt-1 text-green-700";
+            msg.textContent = action === "approve" ? "Approved ✓" : "Rejected";
+            setTimeout(() => window.location.reload(), 600);
+          } catch (err) {
+            msg.className = "text-xs mt-1 text-red-600";
+            msg.textContent = err.message || "Failed";
+            row
+              .querySelectorAll("[data-action]")
+              .forEach((b) => (b.disabled = false));
+          }
+        });
+      });
+    });
+  </script>
+</AdminLayout>

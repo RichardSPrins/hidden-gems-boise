@@ -1,0 +1,240 @@
+---
+import PortalLayout from "@/layouts/PortalLayout.astro";
+import { portalUser, getOwnedLocation } from "@/lib/portal";
+
+const user = portalUser(Astro.locals);
+if (!user) return Astro.redirect("/auth/login?next=/portal/listings");
+
+const { id, locationId } = Astro.params;
+if (!id || !locationId) return Astro.redirect(`/portal/listings/${id ?? ""}`);
+
+const loc = await getOwnedLocation(user.id, locationId);
+if (!loc || loc.businessId !== id) {
+  return Astro.redirect(`/portal/listings/${id}/locations`);
+}
+
+const DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+// Build a complete 7-day view, falling back to "closed" where no row exists.
+const hoursByDay = new Map(loc.hours.map((h) => [h.dayOfWeek, h]));
+const week = DAYS.map((label, day) => {
+  const h = hoursByDay.get(day);
+  return {
+    day,
+    label,
+    isClosed: h ? h.isClosed : true,
+    openTime: h?.openTime ?? "09:00",
+    closeTime: h?.closeTime ?? "17:00",
+  };
+});
+---
+
+<PortalLayout title="Edit location" activeSection="listings">
+  <div slot="page-header" class="mb-6">
+    <nav aria-label="Breadcrumb" class="text-xs text-gem-text-subtle mb-2">
+      <a href="/portal/listings" class="hover:text-gem-gold">My Listings</a>
+      <span class="mx-2">/</span>
+      <a href={`/portal/listings/${id}`} class="hover:text-gem-gold">Listing</a>
+      <span class="mx-2">/</span>
+      <a href={`/portal/listings/${id}/locations`} class="hover:text-gem-gold"
+        >Locations</a
+      >
+      <span class="mx-2">/</span>
+      <span>Edit</span>
+    </nav>
+    <h1 class="font-display text-3xl text-gem-text">Edit location</h1>
+  </div>
+
+  <form
+    id="loc-form"
+    class="space-y-6 max-w-3xl"
+    data-location-id={loc.id}
+    data-business-id={id}
+  >
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display text-lg text-gem-text">Address</h2>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Street address</label>
+        <input
+          name="address"
+          value={loc.address}
+          required
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">City</label>
+          <input
+            name="city"
+            value={loc.city}
+            required
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">State</label>
+          <input
+            name="state"
+            value={loc.state}
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">ZIP</label>
+          <input
+            name="zip"
+            value={loc.zip}
+            required
+            class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Neighborhood</label>
+        <input
+          name="neighborhood"
+          value={loc.neighborhood ?? ""}
+          class="w-full px-3 py-2 rounded-lg border border-gem-border focus:outline-none focus:ring-2 focus:ring-gem-gold"
+        />
+      </div>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="isPrimary" value="1" checked={loc.isPrimary} />
+        Primary location
+      </label>
+    </section>
+
+    <section class="bg-white border border-gem-border rounded-2xl p-6 space-y-3">
+      <h2 class="font-display text-lg text-gem-text">Hours</h2>
+      <div id="hours-grid" class="space-y-2">
+        {
+          week.map((d) => (
+            <div
+              class="grid grid-cols-[7rem_auto_1fr] items-center gap-3"
+              data-day={d.day}
+            >
+              <span class="text-sm font-medium">{d.label}</span>
+              <label class="flex items-center gap-2 text-sm text-gem-text-muted">
+                <input type="checkbox" data-closed checked={d.isClosed} />
+                Closed
+              </label>
+              <div class="flex items-center gap-2" data-times>
+                <input
+                  type="time"
+                  data-open
+                  value={d.openTime}
+                  class="px-2 py-1.5 rounded-lg border border-gem-border text-sm"
+                />
+                <span class="text-gem-text-subtle text-sm">to</span>
+                <input
+                  type="time"
+                  data-close
+                  value={d.closeTime}
+                  class="px-2 py-1.5 rounded-lg border border-gem-border text-sm"
+                />
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="submit"
+        id="save-btn"
+        class="bg-gem-gold text-gem-dark font-semibold px-6 py-2.5 rounded-lg hover:bg-gem-gold-light transition-colors disabled:opacity-50"
+        >Save location</button
+      >
+      <button
+        type="button"
+        id="delete-btn"
+        class="text-sm text-red-600 hover:underline">Delete location</button
+      >
+      <p id="loc-msg" class="text-sm hidden ml-auto" role="status"></p>
+    </div>
+  </form>
+
+  <script is:inline define:vars={{ locationId: loc.id, businessId: id }}>
+    // Toggle time inputs based on the "Closed" checkbox.
+    function syncRow(row) {
+      const closed = row.querySelector("[data-closed]").checked;
+      row.querySelector("[data-times]").style.opacity = closed ? "0.4" : "1";
+      row
+        .querySelectorAll("[data-open],[data-close]")
+        .forEach((i) => (i.disabled = closed));
+    }
+    document.querySelectorAll("#hours-grid [data-day]").forEach((row) => {
+      syncRow(row);
+      row
+        .querySelector("[data-closed]")
+        .addEventListener("change", () => syncRow(row));
+    });
+
+    const form = document.getElementById("loc-form");
+    const btn = document.getElementById("save-btn");
+    const msg = document.getElementById("loc-msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      msg.classList.add("hidden");
+      const fd = new FormData(form);
+      const hours = [...document.querySelectorAll("#hours-grid [data-day]")].map(
+        (row) => {
+          const isClosed = row.querySelector("[data-closed]").checked;
+          return {
+            dayOfWeek: Number(row.dataset.day),
+            isClosed,
+            openTime: isClosed ? null : row.querySelector("[data-open]").value,
+            closeTime: isClosed ? null : row.querySelector("[data-close]").value,
+          };
+        },
+      );
+      const payload = {
+        address: fd.get("address"),
+        city: fd.get("city"),
+        state: fd.get("state") || "ID",
+        zip: fd.get("zip"),
+        neighborhood: fd.get("neighborhood") || null,
+        isPrimary: fd.get("isPrimary") === "1",
+        hours,
+      };
+      try {
+        const res = await fetch(`/api/portal/locations/${locationId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error();
+        msg.textContent = "Saved.";
+        msg.className = "text-sm text-green-600 ml-auto";
+      } catch {
+        msg.textContent = "Save failed.";
+        msg.className = "text-sm text-red-600 ml-auto";
+      } finally {
+        msg.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Save location";
+      }
+    });
+
+    document.getElementById("delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this location? This cannot be undone.")) return;
+      const res = await fetch(`/api/portal/locations/${locationId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) window.location.href = `/portal/listings/${businessId}/locations`;
+      else alert("Delete failed.");
+    });
+  </script>
+</PortalLayout>

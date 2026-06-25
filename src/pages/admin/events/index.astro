@@ -1,0 +1,160 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { db } from "@/lib/db";
+import { event } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
+
+const filter =
+  new URL(Astro.request.url).searchParams.get("status") ?? "PENDING";
+
+const where =
+  filter === "LIVE"
+    ? eq(event.isActive, true)
+    : filter === "PENDING"
+      ? eq(event.isActive, false)
+      : undefined;
+
+const rows = await db.query.event.findMany({
+  where,
+  orderBy: desc(event.createdAt),
+  limit: 200,
+  with: { business: { columns: { name: true, slug: true } } },
+});
+
+const tabs = ["PENDING", "LIVE", "ALL"];
+---
+
+<AdminLayout title="Events" activeSection="events">
+  <div slot="page-header" class="mb-6">
+    <h1 class="font-display text-3xl text-gem-text">Events</h1>
+    <p class="text-gem-text-muted text-sm mt-1">
+      Owner-submitted events. Approve to publish them on the site.
+    </p>
+  </div>
+
+  <div
+    class="flex items-center gap-1 mb-4 bg-white border border-gem-border rounded-2xl p-1 w-fit"
+  >
+    {
+      tabs.map((t) => (
+        <a
+          href={`/admin/events?status=${t}`}
+          class:list={[
+            "text-sm px-3 py-1.5 rounded-lg no-underline",
+            filter === t
+              ? "bg-gem-text text-white"
+              : "text-gem-text-muted hover:text-gem-text",
+          ]}
+        >
+          {t}
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="bg-white border border-gem-border rounded-2xl overflow-hidden">
+    {
+      rows.length === 0 ? (
+        <div class="p-8 text-center text-sm text-gem-text-muted">
+          No events here.
+        </div>
+      ) : (
+        <table class="w-full text-sm">
+          <thead class="bg-gem-mist text-left text-xs uppercase tracking-widest text-gem-text-subtle">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Event</th>
+              <th class="px-4 py-3 font-semibold">Business</th>
+              <th class="px-4 py-3 font-semibold">When</th>
+              <th class="px-4 py-3 font-semibold">Status / Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr
+                class="border-t border-gem-border align-top hover:bg-gem-mist/50"
+                data-event-row
+                data-id={r.id}
+              >
+                <td class="px-4 py-3">
+                  <p class="font-medium text-gem-text">{r.title}</p>
+                  <p class="text-xs text-gem-text-subtle">
+                    {r.category.replace(/_/g, " ")}
+                  </p>
+                </td>
+                <td class="px-4 py-3 text-gem-text-muted">
+                  {r.business?.name}
+                </td>
+                <td class="px-4 py-3 text-xs text-gem-text-subtle">
+                  {new Date(r.startDateTime).toLocaleString()}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    {r.isActive ? (
+                      <>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          Live
+                        </span>
+                        <button
+                          type="button"
+                          data-action="unpublish"
+                          class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gem-border text-gem-text-muted hover:bg-gem-mist"
+                        >
+                          Unpublish
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Pending
+                        </span>
+                        <button
+                          type="button"
+                          data-action="approve"
+                          class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <p data-row-msg class="text-xs mt-1 hidden" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+
+  <script is:inline>
+    document.querySelectorAll("[data-event-row]").forEach((row) => {
+      const id = row.dataset.id;
+      const msg = row.querySelector("[data-row-msg]");
+      row.querySelectorAll("[data-action]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const isActive = btn.dataset.action === "approve";
+          btn.disabled = true;
+          msg.className = "text-xs mt-1 text-gem-text-subtle";
+          msg.textContent = "Saving…";
+          try {
+            const res = await fetch(`/api/admin/events/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ isActive }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Failed");
+            msg.className = "text-xs mt-1 text-green-700";
+            msg.textContent = isActive ? "Approved ✓" : "Unpublished";
+            setTimeout(() => window.location.reload(), 600);
+          } catch (err) {
+            msg.className = "text-xs mt-1 text-red-600";
+            msg.textContent = err.message || "Failed";
+            btn.disabled = false;
+          }
+        });
+      });
+    });
+  </script>
+</AdminLayout>

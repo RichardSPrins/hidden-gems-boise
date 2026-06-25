@@ -129,3 +129,188 @@ export function verifyEmailEmail(ctx: EmailContext): TemplatePayload {
   ].join("\n");
   return { subject, html, text };
 }
+
+// ─────────────────────────────────────────────────────────────
+// CLAIMS
+// ─────────────────────────────────────────────────────────────
+
+interface ClaimAdminNotifyContext {
+  businessName: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone?: string | null;
+  accountEmail?: string | null;
+  verificationMethod?: string | null;
+  notes?: string | null;
+  /** Link to the admin claims queue. */
+  url: string;
+}
+
+/** Sent to the team inbox when a new claim is submitted and needs review. */
+export function claimSubmittedAdminEmail(
+  ctx: ClaimAdminNotifyContext,
+): TemplatePayload {
+  const {
+    businessName,
+    ownerName,
+    ownerEmail,
+    ownerPhone,
+    accountEmail,
+    verificationMethod,
+    notes,
+    url,
+  } = ctx;
+  const subject = `New claim: ${businessName}`;
+  const rows: Array<[string, string | null | undefined]> = [
+    ["Business", businessName],
+    ["Claimant", ownerName],
+    ["Claim email", ownerEmail],
+    ["Phone", ownerPhone],
+    ["Logged-in account", accountEmail],
+    ["Verification", verificationMethod],
+    ["Notes", notes],
+  ];
+  const rowsHtml = rows
+    .filter(([, v]) => v)
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b6b6b;vertical-align:top;">${escapeHtml(
+          k,
+        )}</td><td style="padding:4px 0;">${escapeHtml(String(v))}</td></tr>`,
+    )
+    .join("");
+  const html = wrap({
+    preheader: `${ownerName} wants to claim ${businessName}.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">A business owner submitted a claim awaiting review.</p>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="font-size:14px;">${rowsHtml}</table>
+      ${ctaButton("Review claim", url)}
+    `,
+  });
+  const text = [
+    `New claim: ${businessName}`,
+    "",
+    ...rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`),
+    "",
+    `Review: ${url}`,
+  ].join("\n");
+  return { subject, html, text };
+}
+
+interface ClaimDecisionContext {
+  name?: string | null;
+  businessName: string;
+  /** Link to the portal listings page. */
+  url: string;
+}
+
+/** Sent to the owner when their claim is approved. */
+export function claimApprovedEmail(ctx: ClaimDecisionContext): TemplatePayload {
+  const { name, businessName, url } = ctx;
+  const subject = `Your claim for ${businessName} is approved`;
+  const html = wrap({
+    preheader: `You can now manage ${businessName} on Hidden Gems Boise.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">${greeting(name)}</p>
+      <p style="margin:0 0 16px 0;">Good news — your claim for <strong>${escapeHtml(
+        businessName,
+      )}</strong> has been approved. You can now manage your listing: update details, hours, photos, and events.</p>
+      ${ctaButton("Manage my listing", url)}
+    `,
+  });
+  const text = [
+    greeting(name).replace(/<[^>]+>/g, ""),
+    "",
+    `Your claim for ${businessName} has been approved. Manage your listing:`,
+    url,
+  ].join("\n");
+  return { subject, html, text };
+}
+
+/** Sent to the owner when their claim is rejected. */
+export function claimRejectedEmail(ctx: ClaimDecisionContext): TemplatePayload {
+  const { name, businessName, url } = ctx;
+  const subject = `Update on your claim for ${businessName}`;
+  const html = wrap({
+    preheader: `We couldn't verify your claim for ${businessName}.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">${greeting(name)}</p>
+      <p style="margin:0 0 16px 0;">We weren't able to verify your claim for <strong>${escapeHtml(
+        businessName,
+      )}</strong> at this time. If you believe this is a mistake, reply to this email with more detail and we'll take another look.</p>
+      ${ctaButton("Contact us", url)}
+    `,
+  });
+  const text = [
+    greeting(name).replace(/<[^>]+>/g, ""),
+    "",
+    `We weren't able to verify your claim for ${businessName}. Reply with more detail and we'll take another look.`,
+    url,
+  ].join("\n");
+  return { subject, html, text };
+}
+
+// ─────────────────────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────────────────────
+
+interface EventAdminNotifyContext {
+  businessName: string;
+  eventTitle: string;
+  /** Link to the admin events queue. */
+  url: string;
+}
+
+/** Sent to the team inbox when an owner submits an event for review. */
+export function eventSubmittedAdminEmail(
+  ctx: EventAdminNotifyContext,
+): TemplatePayload {
+  const { businessName, eventTitle, url } = ctx;
+  const subject = `New event: ${eventTitle} (${businessName})`;
+  const html = wrap({
+    preheader: `${businessName} submitted "${eventTitle}" for review.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;"><strong>${escapeHtml(
+        businessName,
+      )}</strong> submitted an event awaiting review:</p>
+      <p style="margin:0 0 16px 0;font-size:16px;">${escapeHtml(eventTitle)}</p>
+      ${ctaButton("Review event", url)}
+    `,
+  });
+  const text = [
+    `New event: ${eventTitle} (${businessName})`,
+    "",
+    `Review: ${url}`,
+  ].join("\n");
+  return { subject, html, text };
+}
+
+interface EventApprovedContext {
+  name?: string | null;
+  eventTitle: string;
+  /** Link to the portal events page. */
+  url: string;
+}
+
+/** Sent to the owner when their event is approved and goes live. */
+export function eventApprovedEmail(ctx: EventApprovedContext): TemplatePayload {
+  const { name, eventTitle, url } = ctx;
+  const subject = `Your event "${eventTitle}" is live`;
+  const html = wrap({
+    preheader: `"${eventTitle}" is now published on Hidden Gems Boise.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">${greeting(name)}</p>
+      <p style="margin:0 0 16px 0;">Your event <strong>${escapeHtml(
+        eventTitle,
+      )}</strong> has been approved and is now live on Hidden Gems Boise.</p>
+      ${ctaButton("View my events", url)}
+    `,
+  });
+  const text = [
+    greeting(name).replace(/<[^>]+>/g, ""),
+    "",
+    `Your event "${eventTitle}" has been approved and is now live:`,
+    url,
+  ].join("\n");
+  return { subject, html, text };
+}
