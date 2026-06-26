@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { db } from "@/lib/db";
 import { business } from "@/lib/db/schema";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { claimMatch } from "@/lib/claim-match";
 
 const status =
   new URL(Astro.request.url).searchParams.get("status") ?? "PENDING";
@@ -20,6 +21,7 @@ const rows = await db.query.business.findMany({
     id: true,
     name: true,
     slug: true,
+    websiteUrl: true,
     claimStatus: true,
     claimUserId: true,
     claimOwnerName: true,
@@ -31,8 +33,20 @@ const rows = await db.query.business.findMany({
   },
   with: {
     claimUser: { columns: { email: true } },
+    contact: { columns: { email: true } },
   },
 });
+
+// Compute an ownership-signal hint per row to speed up manual review.
+const rowsWithMatch = rows.map((r) => ({
+  ...r,
+  match: claimMatch({
+    claimEmail: r.claimOwnerEmail,
+    accountEmail: r.claimUser?.email,
+    contactEmail: r.contact?.email,
+    websiteUrl: r.websiteUrl,
+  }),
+}));
 
 const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
 ---
@@ -68,7 +82,7 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
 
   <div class="bg-white border border-gem-border rounded-2xl overflow-hidden">
     {
-      rows.length === 0 ? (
+      rowsWithMatch.length === 0 ? (
         <div class="p-8 text-center text-sm text-gem-text-muted">
           No claims here.
         </div>
@@ -78,14 +92,14 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
             <tr>
               <th class="px-4 py-3 font-semibold">Business</th>
               <th class="px-4 py-3 font-semibold">Claimant</th>
-              <th class="px-4 py-3 font-semibold">Account</th>
+              <th class="px-4 py-3 font-semibold">Account / Signal</th>
               <th class="px-4 py-3 font-semibold">Verify</th>
               <th class="px-4 py-3 font-semibold">Submitted</th>
               <th class="px-4 py-3 font-semibold">Status / Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {rowsWithMatch.map((r) => (
               <tr
                 class="border-t border-gem-border align-top hover:bg-gem-mist/50"
                 data-claim-row
@@ -131,6 +145,23 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
                 <td class="px-4 py-3 text-xs text-gem-text-subtle">
                   {r.claimUser?.email ?? (
                     <span class="text-red-600">no account</span>
+                  )}
+                  <br />
+                  {r.match.level === "none" ? (
+                    <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gem-mist text-gem-text-muted">
+                      {r.match.label}
+                    </span>
+                  ) : (
+                    <span
+                      class:list={[
+                        "inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                        r.match.level === "email"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-green-50 text-green-700",
+                      ]}
+                    >
+                      ✓ {r.match.label}
+                    </span>
                   )}
                 </td>
                 <td class="px-4 py-3 text-xs text-gem-text-subtle">
