@@ -4,6 +4,7 @@ import { event } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail } from "@/lib/resend";
 import { eventApprovedEmail } from "@/lib/email/templates";
+import { absoluteUrl } from "@/lib/url";
 
 function unauthorized() {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -50,7 +51,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
     const { subject, html, text } = eventApprovedEmail({
       name: existing.business.owner.name,
       eventTitle: existing.title,
-      url: new URL("/portal/events", request.url).toString(),
+      url: absoluteUrl("/portal/events"),
     });
     void sendEmail({ to: existing.business.owner.email, subject, html, text });
   }

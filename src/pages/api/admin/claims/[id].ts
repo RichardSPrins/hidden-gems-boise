@@ -4,6 +4,7 @@ import { business } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail } from "@/lib/resend";
 import { claimApprovedEmail, claimRejectedEmail } from "@/lib/email/templates";
+import { absoluteUrl } from "@/lib/url";
 
 function unauthorized() {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -76,7 +77,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       const { subject, html, text } = claimApprovedEmail({
         name: biz.claimOwnerName,
         businessName: biz.name,
-        url: new URL("/portal/listings", request.url).toString(),
+        url: absoluteUrl("/portal/listings"),
       });
       void sendEmail({ to: biz.claimOwnerEmail, subject, html, text });
     }
@@ -90,7 +91,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       const { subject, html, text } = claimRejectedEmail({
         name: biz.claimOwnerName,
         businessName: biz.name,
-        url: new URL("/contact", request.url).toString(),
+        url: absoluteUrl("/contact"),
       });
       void sendEmail({ to: biz.claimOwnerEmail, subject, html, text });
     }

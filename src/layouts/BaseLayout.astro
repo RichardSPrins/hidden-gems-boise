@@ -3,6 +3,7 @@
 import "../styles/starwind.css";
 import JsonLd from "@/components/SEO/JsonLd.astro";
 import { createWebsiteSchema } from "@/lib/schema";
+import { appBaseUrl } from "@/lib/url";
 
 export interface Props {
   title?: string;
@@ -41,7 +42,7 @@ const site = {
   tagline: "Discover Boise's Best Kept Secrets",
   description:
     "Curated local directory spotlighting the best independently owned businesses across the Treasure Valley.",
-  url: "https://hiddengemsboise.com",
+  url: appBaseUrl(),
   locale: "en_US",
   twitterHandle: "@hiddengemsboise",
   themeColor: "#C9A84C",

@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { portalUser, ownsBusiness } from "@/lib/portal";
 import { notifyAdmin } from "@/lib/email/notify";
 import { eventSubmittedAdminEmail } from "@/lib/email/templates";
+import { absoluteUrl } from "@/lib/url";
 
 function unauthorized() {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -108,7 +109,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     eventSubmittedAdminEmail({
       businessName: biz?.name ?? "A business",
       eventTitle: title,
-      url: new URL("/admin/events", request.url).toString(),
+      url: absoluteUrl("/admin/events"),
     }),
   );
 

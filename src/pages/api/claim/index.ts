@@ -6,6 +6,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { sendSubmissionToGhl } from "@/lib/ghl";
 import { notifyAdmin } from "@/lib/email/notify";
 import { claimSubmittedAdminEmail } from "@/lib/email/templates";
+import { absoluteUrl } from "@/lib/url";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -107,7 +108,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         accountEmail: user.email ?? null,
         verificationMethod,
         notes: notes?.trim() ?? null,
-        url: new URL("/admin/claims", request.url).toString(),
+        url: absoluteUrl("/admin/claims"),
       })
     );
 

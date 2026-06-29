@@ -16,8 +16,11 @@ import type {
   SearchAction,
   DayOfWeek,
 } from "schema-dts";
+import { appBaseUrl } from "@/lib/url";
 
-export const SITE_URL = "https://hiddengemsboise.com";
+// Single source of truth for the public origin (PUBLIC_APP_URL → BETTER_AUTH_URL
+// → fallback). Keep SEO/JSON-LD links in lockstep with emails and webhooks.
+export const SITE_URL = appBaseUrl();
 export const SITE_NAME = "Hidden Gems Boise";
 const SITE_DESCRIPTION =
   "A curated directory of independently owned businesses across the Treasure Valley, Boise Idaho.";
