@@ -1,9 +1,13 @@
 import type { APIRoute } from "astro";
 import { db } from "@/lib/db";
-import { business } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { business, user } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/resend";
-import { claimApprovedEmail, claimRejectedEmail } from "@/lib/email/templates";
+import {
+  claimApprovedEmail,
+  claimRejectedEmail,
+  claimSignupInviteEmail,
+} from "@/lib/email/templates";
 import { absoluteUrl } from "@/lib/url";
 
 function unauthorized() {
@@ -21,12 +25,17 @@ function bad(message: string, status = 400) {
 }
 
 /**
- * Approve or reject a pending claim. Manual moderation surface for the team.
+ * Approve, reject, or send a sign-up invite for a pending claim. Manual
+ * moderation surface for the team.
  *
- * approve → copy claimUserId into ownerId (grants portal access) + mark
- *           APPROVED. Requires a linked account (claimUserId).
+ * approve → grant portal access by setting ownerId. Uses the claim's linked
+ *           account (claimUserId); if there isn't one (legacy claim), links the
+ *           account whose email matches the claim email. If no such account
+ *           exists, it blocks and tells you to invite them to sign up.
  * reject  → mark REJECTED, leave ownerId null. Claimant fields are kept as a
  *           record of who tried.
+ * invite  → email the claimant a prompt to sign up with the claim email so the
+ *           claim can be linked + approved.
  */
 export const PATCH: APIRoute = async ({ request, params, locals }) => {
   const admin = locals.user as { role?: string } | null;
@@ -35,10 +44,12 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
   const id = params.id as string;
   if (!id) return bad("Missing id");
 
-  const body = (await request.json()) as { action?: "approve" | "reject" };
+  const body = (await request.json()) as {
+    action?: "approve" | "reject" | "invite";
+  };
   const action = body.action;
-  if (action !== "approve" && action !== "reject") {
-    return bad("action must be 'approve' or 'reject'");
+  if (action !== "approve" && action !== "reject" && action !== "invite") {
+    return bad("action must be 'approve', 'reject' or 'invite'");
   }
 
   const biz = await db.query.business.findFirst({
@@ -57,17 +68,54 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
     return bad("This claim is not pending.", 409);
   }
 
+  if (action === "invite") {
+    const email = biz.claimOwnerEmail?.trim();
+    if (!email) return bad("This claim has no email to invite.", 422);
+    const { subject, html, text } = claimSignupInviteEmail({
+      name: biz.claimOwnerName,
+      businessName: biz.name,
+      // Land them on sign-up; after creating the account they return to /claim.
+      url: absoluteUrl(
+        `/auth/sign-up?next=${encodeURIComponent("/claim")}&email=${encodeURIComponent(email)}`,
+      ),
+    });
+    void sendEmail({ to: email, subject, html, text });
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   if (action === "approve") {
-    if (!biz.claimUserId) {
-      return bad(
-        "This claim has no linked account (submitted before login was required). Link an owner manually before approving.",
-        422
-      );
+    // Prefer the account attached at claim time; otherwise link the account
+    // whose email matches the claim email (covers legacy / no-account claims
+    // once the owner has signed up with that email).
+    let ownerUserId = biz.claimUserId;
+    if (!ownerUserId) {
+      const email = biz.claimOwnerEmail?.trim();
+      if (!email) {
+        return bad(
+          "This claim has no account and no email to match. Reject it and ask the owner to re-claim while signed in.",
+          422,
+        );
+      }
+      const match = await db.query.user.findFirst({
+        where: sql`lower(${user.email}) = ${email.toLowerCase()}`,
+        columns: { id: true },
+      });
+      if (!match) {
+        return bad(
+          `No account exists for ${email} yet. Use "Invite to sign up" — once they create an account with that email, approve again to link it.`,
+          422,
+        );
+      }
+      ownerUserId = match.id;
     }
+
     await db
       .update(business)
       .set({
-        ownerId: biz.claimUserId,
+        ownerId: ownerUserId,
+        claimUserId: ownerUserId, // backfill the link for the record
         claimStatus: "APPROVED",
         updatedAt: new Date(),
       })

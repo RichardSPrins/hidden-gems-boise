@@ -174,7 +174,7 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
                 </td>
                 <td class="px-4 py-3">
                   {r.claimStatus === "PENDING" ? (
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                       <button
                         type="button"
                         data-action="approve"
@@ -182,6 +182,15 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
                       >
                         Approve
                       </button>
+                      {!r.claimUser && (
+                        <button
+                          type="button"
+                          data-action="invite"
+                          class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gem-gold text-gem-gold hover:bg-gem-gold/10"
+                        >
+                          Invite to sign up
+                        </button>
+                      )}
                       <button
                         type="button"
                         data-action="reject"
@@ -222,7 +231,7 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
           if (action === "reject" && !confirm("Reject this claim?")) return;
           row.querySelectorAll("[data-action]").forEach((b) => (b.disabled = true));
           msg.className = "text-xs mt-1 text-gem-text-subtle";
-          msg.textContent = "Saving…";
+          msg.textContent = action === "invite" ? "Sending…" : "Saving…";
           try {
             const res = await fetch(`/api/admin/claims/${id}`, {
               method: "PATCH",
@@ -232,6 +241,14 @@ const tabs = ["PENDING", "APPROVED", "REJECTED", "ALL"];
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || "Failed");
             msg.className = "text-xs mt-1 text-green-700";
+            if (action === "invite") {
+              // Invite just sends an email — keep the row, re-enable buttons.
+              msg.textContent = "Invite sent ✓";
+              row
+                .querySelectorAll("[data-action]")
+                .forEach((b) => (b.disabled = false));
+              return;
+            }
             msg.textContent = action === "approve" ? "Approved ✓" : "Rejected";
             setTimeout(() => window.location.reload(), 600);
           } catch (err) {

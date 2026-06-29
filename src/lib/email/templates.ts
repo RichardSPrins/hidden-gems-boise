@@ -250,6 +250,34 @@ export function claimRejectedEmail(ctx: ClaimDecisionContext): TemplatePayload {
   return { subject, html, text };
 }
 
+/** Sent to a claimant who has no account yet, prompting them to sign up. */
+export function claimSignupInviteEmail(
+  ctx: ClaimDecisionContext,
+): TemplatePayload {
+  const { name, businessName, url } = ctx;
+  const subject = `Finish claiming ${businessName} — create your account`;
+  const html = wrap({
+    preheader: `Create your account to manage ${businessName} on Hidden Gems Boise.`,
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">${greeting(name)}</p>
+      <p style="margin:0 0 16px 0;">Thanks for claiming <strong>${escapeHtml(
+        businessName,
+      )}</strong> on Hidden Gems Boise. To finish, create a free account using <em>this same email address</em> — that's how we connect the claim to you.</p>
+      ${ctaButton("Create my account", url)}
+      <p style="margin:24px 0 0 0;font-size:13px;color:#6b6b6b;">Once your account is set up, we'll review and activate your claim. Be sure to sign up with the email this message was sent to.</p>
+    `,
+  });
+  const text = [
+    greeting(name).replace(/<[^>]+>/g, ""),
+    "",
+    `Thanks for claiming ${businessName}. Create a free account using THIS SAME email address to finish:`,
+    url,
+    "",
+    "Once your account is set up, we'll review and activate your claim.",
+  ].join("\n");
+  return { subject, html, text };
+}
+
 // ─────────────────────────────────────────────────────────────
 // EVENTS
 // ─────────────────────────────────────────────────────────────
