@@ -3,9 +3,40 @@ import { betterAuth } from "better-auth";
 import { db } from "./db";
 import { sendEmail } from "./resend";
 import { passwordResetEmail, verifyEmailEmail } from "./email/templates";
+import { appBaseUrl } from "./url";
+
+/**
+ * Origins Better Auth will accept login/auth POSTs from. Behind Railway's proxy
+ * Better Auth mis-infers its own origin (it sees the internal localhost:8080),
+ * so we must pin this explicitly or every cross-origin auth call is rejected as
+ * "Invalid origin". We trust the configured public origin(s) plus the known
+ * production domains (apex + www) and the Railway domain as a safety net.
+ */
+function buildTrustedOrigins(): string[] {
+  const origins = new Set<string>();
+  const add = (v?: string | null) => {
+    const t = v?.trim().replace(/\/$/, "");
+    if (t) origins.add(t);
+  };
+  // Explicit override wins (comma-separated list in TRUSTED_ORIGINS).
+  process.env.TRUSTED_ORIGINS?.split(",").forEach(add);
+  // Configured public origins.
+  add(process.env.PUBLIC_APP_URL);
+  add(process.env.BETTER_AUTH_URL);
+  add(appBaseUrl());
+  // Known production domains — apex + www, so both resolve regardless of which
+  // one the browser lands on.
+  add("https://hiddengemsboise.com");
+  add("https://www.hiddengemsboise.com");
+  // Railway-provided domain (if the app is ever hit directly there).
+  origins.add("https://*.up.railway.app");
+  return [...origins];
+}
 
 export const auth = betterAuth({
   experimental: { joins: true },
+  baseURL: appBaseUrl(),
+  trustedOrigins: buildTrustedOrigins(),
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
